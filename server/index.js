@@ -211,6 +211,10 @@ io.on("connection", (socket) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.send('🚀 Server is running!');
+});
+
 
 // MongoDB & server start
 const PORT = process.env.PORT || 5000;
