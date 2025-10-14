@@ -22,7 +22,7 @@ export const updatePost = async (id, formData) => {
 
 // Get all posts
 export const getAllPosts = async () => {
-  const res = await axiosInstance.get(API);
+  const res = await axiosInstance.get(`${API_URL}`);
   return res.data;
 };
 
