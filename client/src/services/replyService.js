@@ -1,7 +1,7 @@
 // src/services/replyService.js
 import axiosInstance from "../utils/axiosInstance";
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://mediverse2-8.onrender.com/'}/replies`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://mediverse2-9.onrender.com/'}/replies`;
 
 
 

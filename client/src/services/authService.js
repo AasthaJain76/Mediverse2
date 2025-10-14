@@ -1,7 +1,7 @@
 // services/authService.js
 import axiosInstance from "../utils/axiosInstance";
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || "https://mediverse2-8.onrender.com/"}/auth`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || "https://mediverse2-9.onrender.com/"}/auth`;
 
 export const register = async (userData) => {
   const res = await axiosInstance.post(`${API_URL}/signup`, userData);

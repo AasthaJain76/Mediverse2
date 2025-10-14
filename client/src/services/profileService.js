@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_BASE_URL || 'https://mediverse2-8.onrender.com/';
+const BASE = import.meta.env.VITE_API_BASE_URL || 'https://mediverse2-9.onrender.com/';
 
 // ✅ Axios instance with credentials enabled
 const axiosInstance = axios.create({

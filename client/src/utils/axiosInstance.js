@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://mediverse2-8.onrender.com/",
+  baseURL: "https://mediverse2-9.onrender.com/",
   withCredentials: true, // ✅ Required for cookies
 });
 

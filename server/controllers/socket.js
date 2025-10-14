@@ -8,7 +8,7 @@ export const initIO = (server) => {
 
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: "https://mediverse2.vercel.app",
       methods: ["GET", "POST"],
       credentials: true,
     },
