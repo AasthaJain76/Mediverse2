@@ -30,7 +30,7 @@ const app = express();
 if (process.env.NODE_ENV !== "production") dotenv.config();
 
 app.use(cors({
-  origin: "https://mediverse2-aico.vercel.app/",
+  origin: "https://mediverse2.vercel.app/",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

@@ -3,7 +3,7 @@ import axios from "axios";
 import axiosInstance from "../utils/axiosInstance"; // Uses withCredentials: true
 
 const API = "/posts"; // Base URL already set in axiosInstance
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || "https://mediverse2.vercel.app"}/posts`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || "https://mediverse2-8.onrender.com/"}/posts`;
 
 export const createPost = async (formData) => {
   const res = await axiosInstance.post(API, formData, {
