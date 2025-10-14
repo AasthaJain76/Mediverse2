@@ -1,17 +1,9 @@
 // src/services/replyService.js
 import axiosInstance from "../utils/axiosInstance";
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/replies`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://mediverse2.vercel.app/'}/replies`;
 
 
-// ✅ Create a reply for a thread
-// export const createReply = async (threadId, content) => {
-//   const res = await axiosInstance.post(
-//     API_URL,
-//     { threadId, content }
-//   );
-//   return res.data;
-// };
 
 // 💬 Reply to a specific thread (if using a nested route)
 export const postReply = async (threadId, replyData) => {

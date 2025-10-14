@@ -1,6 +1,6 @@
 // services/threadService.js
 import axiosInstance from "../utils/axiosInstance";
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/threads`;
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://mediverse2.vercel.app/'}/threads`;
 
 
 // ✅ Get all threads (public)

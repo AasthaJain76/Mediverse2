@@ -61,13 +61,13 @@ passport.deserializeUser(User.deserializeUser());
 app.use((req, res, next) => { console.log(`🔥 ${req.method} ${req.url}`); next(); });
 
 // API routes
-app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/posts", postRoutes);
-app.use("/api/threads", threadRoutes);
-app.use("/api/replies", replyRoutes);
-app.use("/api/roadmap", roadmapRoutes);
-app.use("/api/resume", resumeRoutes);
+app.use("/auth", authRoutes);
+app.use("/profile", profileRoutes);
+app.use("/posts", postRoutes);
+app.use("/threads", threadRoutes);
+app.use("/replies", replyRoutes);
+app.use("/roadmap", roadmapRoutes);
+app.use("/resume", resumeRoutes);
 
 // HTTP server
 const server = createServer(app);

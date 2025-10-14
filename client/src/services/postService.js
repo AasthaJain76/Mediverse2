@@ -3,16 +3,8 @@ import axios from "axios";
 import axiosInstance from "../utils/axiosInstance"; // Uses withCredentials: true
 
 const API = "/posts"; // Base URL already set in axiosInstance
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"}/posts`;
-// Create a new post (with image)
-// export const createPost = async (formData) => {
-//   const res = await axiosInstance.post(API, formData, {
-//     headers: {
-//       'Content-Type': 'multipart/form-data',
-//     },
-//   });
-//   return res.data;
-// };
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || "https://mediverse2.vercel.app"}/posts`;
+
 export const createPost = async (formData) => {
   const res = await axiosInstance.post(API, formData, {
     headers: { "Content-Type": "multipart/form-data" },
