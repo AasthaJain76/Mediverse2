@@ -35,18 +35,19 @@ export const analyzeResume = async (req, res) => {
     console.log("📄 Extracted text preview:", text.slice(0, 300));
 
     // 2️⃣ Use Gemini 2.5 Flash model
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // 3️⃣ Structured system + user prompt
+    // 3️⃣ Correct payload structure
     const result = await model.generateContent({
       contents: [
         {
-          text: "You are a professional resume analyzer. Respond ONLY with valid JSON, no explanations."
-        },
-        {
-          text: `Resume Text: ${text}
+          parts: [
+            {
+              text: `
+You are a professional resume analyzer. Respond ONLY with valid JSON, no explanations.
+
+Resume Text:
+${text}
 
 Strict JSON format:
 {
@@ -64,12 +65,14 @@ Strict JSON format:
     "projects": "feedback"
   }
 }`
+            }
+          ]
         }
       ],
       generationConfig: {
         temperature: 0,
         maxOutputTokens: 900,
-        topP: 0.95,
+        topP: 0.95
       }
     });
 
@@ -79,7 +82,7 @@ Strict JSON format:
 
     let analysis;
     try {
-      const match = rawOutput.match(/\{[\s\S]*\}/); // extract JSON block
+      const match = rawOutput.match(/\{[\s\S]*\}/);
       if (match) analysis = JSON.parse(match[0]);
       else throw new Error("No JSON found in AI output");
     } catch (e) {
@@ -90,7 +93,7 @@ Strict JSON format:
     // 5️⃣ Send response
     res.json({
       extractedText: text.slice(0, 500),
-      analysis,
+      analysis
     });
 
   } catch (err) {

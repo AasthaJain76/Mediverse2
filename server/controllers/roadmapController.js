@@ -13,12 +13,12 @@ export const generateRoadmap = async (req, res) => {
   }
 
   try {
+    // 1️⃣ Call Gemini 2.5 Flash
     const response = await axios.post(
       `${BASE_URL}/gemini-2.5-flash:generateContent?key=${API_KEY}`,
       {
         contents: [
           {
-            role: "user",
             parts: [
               {
                 text: `Create a modern, step-by-step roadmap for learning ${topic}.
@@ -31,35 +31,38 @@ Format guidelines:
 3️⃣ Keep tone motivational and practical, not like a textbook.
 4️⃣ Avoid long paragraphs — focus on short, crisp, actionable points.
 5️⃣ The roadmap should feel like a personal mentor guide.`
-              },
-            ],
-          },
+              }
+            ]
+          }
         ],
         generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 1000,
-        },
+          temperature: 0.7,
+          maxOutputTokens: 1200,
+          topP: 0.95,
+        }
       }
     );
 
-    // 🧠 FIX: extract text correctly for Gemini 2.x
-    const candidates = response.data?.candidates || [];
-    const roadmap =
-      candidates[0]?.content?.parts
+    // 2️⃣ Extract generated text safely
+    let generatedRoadmap = "No roadmap generated.";
+    try {
+      const candidates = response.data?.candidates || [];
+      generatedRoadmap = candidates[0]?.content?.parts
         ?.map((p) => p.text)
         ?.join("\n")
-        ?.trim() || "No roadmap generated.";
+        ?.trim() || generatedRoadmap;
+    } catch (e) {
+      console.warn("⚠️ Failed to parse roadmap text:", e.message);
+    }
 
-    console.log("📜 Generated roadmap:\n", roadmap);
+    console.log("📜 Generated roadmap:\n", generatedRoadmap);
 
-    res.json({ topic, roadmap });
+    res.json({ topic, roadmap: generatedRoadmap });
   } catch (error) {
     console.error("❌ Gemini API error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to generate roadmap" });
   }
 };
-
-
 
 
 
