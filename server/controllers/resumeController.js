@@ -34,22 +34,16 @@ export const analyzeResume = async (req, res) => {
 
     console.log("📄 Extracted text preview:", text.slice(0, 300));
 
-    // 2️⃣ Use Gemini 2.5 Flash model
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    // 2️⃣ Use Gemini 2.5 Flash
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
 
-    // 3️⃣ Correct payload structure
-    const result = await model.generateContent({
-      contents: [
-        {
-          parts: [
-            {
-              text: `
-You are a professional resume analyzer. Respond ONLY with valid JSON, no explanations.
+    // 3️⃣ Construct prompt with strict JSON instruction
+    const prompt = `
+You are a Resume Analysis AI. Analyze the resume text below and return ONLY a JSON object.
+Do NOT include explanations, markdown, or extra text. The JSON must strictly follow this structure:
 
-Resume Text:
-${text}
-
-Strict JSON format:
 {
   "improvements": ["bullet suggestions"],
   "extracted_skills": ["list of skills"],
@@ -64,38 +58,41 @@ Strict JSON format:
     "education": "feedback",
     "projects": "feedback"
   }
-}`
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0,
-        maxOutputTokens: 900,
-        topP: 0.95
-      }
+}
+
+Resume Text:
+${text}
+`;
+
+    // 4️⃣ Generate content
+    const result = await model.generateContent({
+      input: prompt,
+      temperature: 0.7,
+      maxOutputTokens: 900,
     });
 
-    // 4️⃣ Parse JSON safely
     const rawOutput = await result.response.text();
     console.log("🤖 Gemini raw output:\n", rawOutput);
 
+    // 5️⃣ Parse JSON safely
     let analysis;
     try {
-      const match = rawOutput.match(/\{[\s\S]*\}/);
-      if (match) analysis = JSON.parse(match[0]);
-      else throw new Error("No JSON found in AI output");
+      const match = rawOutput.match(/\{[\s\S]*\}/); // extract JSON block
+      if (match) {
+        analysis = JSON.parse(match[0]);
+      } else {
+        throw new Error("No JSON found in AI output");
+      }
     } catch (e) {
       console.warn("⚠️ AI did not return valid JSON, wrapping raw text");
       analysis = { raw: rawOutput };
     }
 
-    // 5️⃣ Send response
+    // 6️⃣ Return response
     res.json({
       extractedText: text.slice(0, 500),
-      analysis
+      analysis,
     });
-
   } catch (err) {
     console.error("❌ Resume analysis failed:", err);
     res.status(500).json({ error: "Failed to analyze resume" });
