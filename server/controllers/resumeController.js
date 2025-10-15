@@ -1,12 +1,10 @@
 import pdf from "pdf-extraction";
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
-import axios from "axios";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const API_KEY = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// -------------------- ANALYZE RESUME --------------------
 export const analyzeResume = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -20,7 +18,7 @@ export const analyzeResume = async (req, res) => {
       text = pdfData.text?.trim() || "";
 
       if (!text && req.file.size > 50 * 1024) {
-        console.log("⚠️ No text found in PDF, switching to OCR...");
+        console.log("⚠️ No text found, switching to OCR...");
         const bufferArray = new Uint8Array(req.file.buffer);
         const ocrResult = await Tesseract.recognize(bufferArray, "eng");
         text = ocrResult.data.text?.trim() || "";
@@ -36,74 +34,67 @@ export const analyzeResume = async (req, res) => {
 
     console.log("📄 Extracted text preview:", text.slice(0, 300));
 
-    // 2️⃣ Build Gemini prompt
-    const prompt = `
-      Analyze the following resume and return ONLY valid JSON (no markdown, no extra explanation).
-      Structure your response exactly like this:
+    // 2️⃣ Use Gemini 2.5 Flash model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
 
-      {
-        "improvements": ["bullet suggestions"],
-        "extracted_skills": ["list of skills"],
-        "skill_gaps": ["missing skills for Frontend Developer role"],
-        "score": 0-100,
-        "recommended_roles": ["role1", "role2"],
-        "ats_keywords": ["ATS-friendly keywords to add"],
-        "section_feedback": {
-          "summary": "feedback",
-          "skills": "feedback",
-          "experience": "feedback",
-          "education": "feedback",
-          "projects": "feedback"
-        }
-      }
-
-      Resume:
-      ${text}
-    `;
-
-    // 3️⃣ Call Gemini 2.5 Flash API
-    const response = await axios.post(
-      `${BASE_URL}/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1000,
+    // 3️⃣ Structured system + user prompt
+    const result = await model.generateContent({
+      contents: [
+        {
+          text: "You are a professional resume analyzer. Respond ONLY with valid JSON, no explanations."
         },
+        {
+          text: `Resume Text: ${text}
+
+Strict JSON format:
+{
+  "improvements": ["bullet suggestions"],
+  "extracted_skills": ["list of skills"],
+  "skill_gaps": ["missing skills for Frontend Developer role"],
+  "score": 0-100,
+  "recommended_roles": ["role1", "role2"],
+  "ats_keywords": ["ATS-friendly keywords to add"],
+  "section_feedback": {
+    "summary": "feedback",
+    "skills": "feedback",
+    "experience": "feedback",
+    "education": "feedback",
+    "projects": "feedback"
+  }
+}`
+        }
+      ],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 900,
+        topP: 0.95,
       }
-    );
+    });
 
-    const rawOutput =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-
+    // 4️⃣ Parse JSON safely
+    const rawOutput = await result.response.text();
     console.log("🤖 Gemini raw output:\n", rawOutput);
 
-    // 4️⃣ Safely parse JSON
     let analysis;
     try {
-      const match = rawOutput.match(/\{[\s\S]*\}/);
-      if (match) {
-        analysis = JSON.parse(match[0]);
-      } else {
-        throw new Error("No valid JSON found in AI output");
-      }
-      console.log("✅ Parsed JSON:\n", JSON.stringify(analysis, null, 2));
-    } catch (err) {
-      console.warn("⚠️ Gemini did not return valid JSON, returning raw output");
+      const match = rawOutput.match(/\{[\s\S]*\}/); // extract JSON block
+      if (match) analysis = JSON.parse(match[0]);
+      else throw new Error("No JSON found in AI output");
+    } catch (e) {
+      console.warn("⚠️ AI did not return valid JSON, wrapping raw text");
       analysis = { raw: rawOutput };
     }
 
-    // 5️⃣ Send final structured response
+    // 5️⃣ Send response
     res.json({
       extractedText: text.slice(0, 500),
       analysis,
     });
+
   } catch (err) {
-    console.error("❌ Resume analysis failed:", err.response?.data || err.message);
+    console.error("❌ Resume analysis failed:", err);
     res.status(500).json({ error: "Failed to analyze resume" });
   }
 };
