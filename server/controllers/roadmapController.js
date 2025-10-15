@@ -3,52 +3,58 @@ import Roadmap from "../models/Roadmap.js";
 import mongoose from "mongoose";
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const API_KEY = process.env.GEMINI_API_KEY; // 🔒 keep safe in backend .env
+const API_KEY = process.env.GEMINI_API_KEY;
 
-// -------------------- GENERATE ROADMAP --------------------
 export const generateRoadmap = async (req, res) => {
   const { topic } = req.body;
 
-  if (!topic || topic.trim() === "") {
+  if (!topic?.trim()) {
     return res.status(400).json({ error: "Topic is required" });
   }
 
   try {
     const response = await axios.post(
-      `${BASE_URL}/gemini-2.5-flash:generateContent?key=${API_KEY}`, // ✅ correct model
+      `${BASE_URL}/gemini-2.5-flash:generateContent?key=${API_KEY}`,
       {
         contents: [
           {
+            role: "user",
             parts: [
               {
                 text: `Create a modern, step-by-step roadmap for learning ${topic}.
 Format guidelines:
-1. Use stage-wise sections with emojis (✅, 🚀, 📚, 🔗).
-2. For each stage, include:
+1️⃣ Use stage-wise sections with emojis (✅, 🚀, 📚, 🔗)
+2️⃣ For each stage, include:
    - 🎯 Objective (1 short line)
    - 📚 Key Topics (bullet points only)
    - 🔗 Suggested Resources (max 2 per stage)
-3. Keep tone motivational and practical, not like a textbook.
-4. Avoid long paragraphs — focus on short, crisp, actionable points.
-5. The roadmap should feel like a personal mentor guide.`,
+3️⃣ Keep tone motivational and practical, not like a textbook.
+4️⃣ Avoid long paragraphs — focus on short, crisp, actionable points.
+5️⃣ The roadmap should feel like a personal mentor guide.`
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 900,
+          temperature: 0.8,
+          maxOutputTokens: 1000,
         },
       }
     );
 
+    // 🧠 FIX: extract text correctly for Gemini 2.x
+    const candidates = response.data?.candidates || [];
     const roadmap =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "No roadmap generated.";
+      candidates[0]?.content?.parts
+        ?.map((p) => p.text)
+        ?.join("\n")
+        ?.trim() || "No roadmap generated.";
+
+    console.log("📜 Generated roadmap:\n", roadmap);
 
     res.json({ topic, roadmap });
   } catch (error) {
-    console.error("Gemini API error:", error.response?.data || error.message);
+    console.error("❌ Gemini API error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to generate roadmap" });
   }
 };
