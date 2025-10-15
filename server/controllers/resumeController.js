@@ -30,62 +30,60 @@ export const analyzeResume = async (req, res) => {
       return res.status(400).json({ error: "Unsupported file type" });
     }
 
-    if (!text) {
-      return res.status(400).json({ error: "No text could be extracted" });
-    }
+    if (!text) return res.status(400).json({ error: "No text could be extracted" });
 
     console.log("📄 Extracted text preview:", text.slice(0, 300));
 
-    // 2️⃣ Ask Gemini for structured analysis
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // 2️⃣ Use a valid Gemini model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5" }); // ✅ valid model
 
     const prompt = `
-    Analyze the following resume and return ONLY a valid JSON object.
-    Do NOT include explanations, markdown, or extra text. 
-    The JSON must strictly follow this structure:
+      Analyze the following resume and return ONLY a valid JSON object.
+      Do NOT include explanations, markdown, or extra text. 
+      The JSON must strictly follow this structure:
 
-    {
-      "improvements": ["bullet suggestions"],
-      "extracted_skills": ["list of skills"],
-      "skill_gaps": ["missing skills for Frontend Developer role"],
-      "score": 0-100,
-      "recommended_roles": ["role1", "role2"],
-      "ats_keywords": ["ATS-friendly keywords to add"],
-      "section_feedback": {
-        "summary": "feedback",
-        "skills": "feedback",
-        "experience": "feedback",
-        "education": "feedback",
-        "projects": "feedback"
+      {
+        "improvements": ["bullet suggestions"],
+        "extracted_skills": ["list of skills"],
+        "skill_gaps": ["missing skills for Frontend Developer role"],
+        "score": 0-100,
+        "recommended_roles": ["role1", "role2"],
+        "ats_keywords": ["ATS-friendly keywords to add"],
+        "section_feedback": {
+          "summary": "feedback",
+          "skills": "feedback",
+          "experience": "feedback",
+          "education": "feedback",
+          "projects": "feedback"
+        }
       }
-    }
 
-    Resume Text:
-    ${text}
+      Resume Text:
+      ${text}
     `;
 
+    // 3️⃣ Generate response
     const result = await model.generateContent(prompt);
-    let rawOutput = result.response.text();
+    const rawOutput = await result.response.text(); // text from AI
 
     console.log("🤖 Gemini raw output:\n", rawOutput);
 
-    // 3️⃣ Try to parse clean JSON
+    // 4️⃣ Parse JSON safely
     let analysis;
     try {
-      // Extract only the JSON object using regex
-      const match = rawOutput.match(/\{[\s\S]*\}/);
+      const match = rawOutput.match(/\{[\s\S]*\}/); // extract JSON block
       if (match) {
         analysis = JSON.parse(match[0]);
       } else {
-        throw new Error("No JSON found in Gemini output");
+        throw new Error("No JSON found in AI output");
       }
       console.log("✅ Parsed JSON Analysis:\n", JSON.stringify(analysis, null, 2));
     } catch (e) {
-      console.warn("⚠️ Gemini did not return valid JSON, wrapping raw text");
+      console.warn("⚠️ AI did not return valid JSON, wrapping raw text");
       analysis = { raw: rawOutput };
     }
 
-    // 4️⃣ Send structured response
+    // 5️⃣ Send response
     res.json({
       extractedText: text.slice(0, 500),
       analysis,
