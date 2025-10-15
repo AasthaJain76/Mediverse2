@@ -1,7 +1,5 @@
 import express from "express";
 import { createServer } from "http";
-import multer from "multer";
-import fs from "fs";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -9,6 +7,8 @@ import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import User from "./models/User.js";
+import { initIO } from "./controllers/socket.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -19,54 +19,52 @@ import replyRoutes from "./routes/replyRoutes.js";
 import roadmapRoutes from "./routes/roadmapRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js";
 
-// Socket helpers
-import { initIO } from "./controllers/socket.js";
-
-// Models
-import User from "./models/User.js";
-
-// Express setup
-const app = express();
 if (process.env.NODE_ENV !== "production") dotenv.config();
 
-app.use(cors({
-  origin: "https://mediverse2.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
+const app = express();
 
+// --- CORS ---
+app.use(
+  cors({
+    origin: "https://mediverse2.vercel.app",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  })
+);
+
+// --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Session setup
-const sessionOptions = {
-  secret: "supersecret",
+// --- Session ---
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || "supersecret",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
-    sameSite: "none", // ❗ MUST be 'none' for cross-site cookies
-    secure: true,     // ❗ required when using https (Render + Vercel are https)
+    secure: true,
+    sameSite: "none",
+    maxAge: 1000 * 60 * 60 * 24 * 7,
   },
-};
-
-const sessionMiddleware = session(sessionOptions);
+});
 app.use(sessionMiddleware);
 
-// Passport setup
+// --- Passport ---
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy({ usernameField: "email" }, User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// Logging
-app.use((req, res, next) => { console.log(`🔥 ${req.method} ${req.url}`); next(); });
+// --- Logging ---
+app.use((req, res, next) => {
+  console.log(`🔥 ${req.method} ${req.url}`);
+  next();
+});
 
-// API routes
+// --- Routes ---
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);
 app.use("/posts", postRoutes);
@@ -75,30 +73,25 @@ app.use("/replies", replyRoutes);
 app.use("/roadmap", roadmapRoutes);
 app.use("/resume", resumeRoutes);
 
-// HTTP server
+// --- Server + Socket ---
 const server = createServer(app);
+const io = initIO(server);
 
-// Initialize Socket.IO
-const io = initIO(server,sessionMiddleware);
-
-// Share session with Socket.IO
+// Share session
 io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
 io.use((socket, next) => {
-  if (socket.request.session.passport?.user) next();
+  if (socket.request.session?.passport?.user) next();
   else next(new Error("Unauthorized"));
 });
 
-// Socket events
 io.on("connection", (socket) => {
   console.log("✅ Client connected:", socket.id);
 
-  // Join thread room
   socket.on("joinThread", (threadId) => {
     socket.join(threadId);
     console.log(`Socket ${socket.id} joined thread ${threadId}`);
   });
 
-  // Example for replies
   socket.on("new-reply", (reply) => {
     io.to(reply.threadId).emit("receive-reply", reply);
   });
@@ -112,24 +105,20 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('🚀 Server is running!');
+// --- Root route ---
+app.get("/", (req, res) => {
+  res.send("🚀 Server is running!");
 });
 
-
-// MongoDB & server start
+// --- MongoDB ---
 const PORT = process.env.PORT || 5000;
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() =>
-    server.listen(PORT, () =>
-      console.log(`🚀 Server running on port ${PORT}`)
-    )
-  )
+  .then(() => server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`)))
   .catch((err) => {
-    console.error('❌ MongoDB connection failed:', err.message);
+    console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1);
   });
