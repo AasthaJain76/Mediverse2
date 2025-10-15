@@ -29,6 +29,7 @@ app.use(
     origin: "https://mediverse2.vercel.app",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -39,16 +40,18 @@ app.use(cookieParser());
 
 // --- Session ---
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || "supersecret",
+  name: "connect.sid",            // explicitly set the cookie name
+  secret: process.env.SESSION_SECRET || "mediverse",
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: process.env.NODE_ENV === "production", // ✅ must be HTTPS in prod
+    sameSite: "none",         // ✅ cross-site cookie
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
 });
+
 app.use(sessionMiddleware);
 
 // --- Passport ---

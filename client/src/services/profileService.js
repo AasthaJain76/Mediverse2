@@ -1,12 +1,6 @@
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_BASE_URL || 'https://mediverse2-9.onrender.com';
-
-// ✅ Axios instance with credentials enabled
-const axiosInstance = axios.create({
-  baseURL: BASE,            
-  withCredentials: true, // important for sending session cookies
-});
+import axiosInstance from '../utils/axiosInstance';
 
 // 📥 GET current user's profile
 export const getMyProfile = async () => {
