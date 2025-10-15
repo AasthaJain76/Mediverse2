@@ -96,26 +96,22 @@ export const loginUser = (req, res, next) => {
       console.warn("Authentication failed:", info?.message);
       return res.status(401).json({ message: info?.message || "Invalid credentials" });
     }
+
+    // Only one req.login
     req.login(user, (err) => {
       if (err) return next(err);
+
       console.log("Session after login:", req.session);
       console.log("Passport user:", req.session.passport);
-      res.status(200).json({ message: "Login successful", user });
-    });
 
-    req.login(user, (err) => {
-      if (err) {
-        console.error("Login error:", err);
-        return next(err);
-      }
-
-      // Optionally remove sensitive fields
+      // Remove sensitive fields before sending
       const { password, ...safeUser } = user.toObject();
-      res.status(200).json({ user: safeUser });
+      return res.status(200).json({ message: "Login successful", user: safeUser });
     });
 
-  })(req, res, next);
+  })(req, res, next); // passport.authenticate callback
 };
+
 
 
 
