@@ -5,7 +5,7 @@ import LocalStrategy from 'passport-local';
 import Profile from "../models/Profile.js";
 
 export const registerUser = async (req, res) => {
-  console.log("req.body",req.body);
+  console.log("req.body", req.body);
   const {
     username,
     email,
@@ -96,6 +96,12 @@ export const loginUser = (req, res, next) => {
       console.warn("Authentication failed:", info?.message);
       return res.status(401).json({ message: info?.message || "Invalid credentials" });
     }
+    req.login(user, (err) => {
+      if (err) return next(err);
+      console.log("Session after login:", req.session);
+      console.log("Passport user:", req.session.passport);
+      res.status(200).json({ message: "Login successful", user });
+    });
 
     req.login(user, (err) => {
       if (err) {
@@ -107,6 +113,7 @@ export const loginUser = (req, res, next) => {
       const { password, ...safeUser } = user.toObject();
       res.status(200).json({ user: safeUser });
     });
+
   })(req, res, next);
 };
 
