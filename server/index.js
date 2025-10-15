@@ -39,6 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // --- Session ---
+app.set("trust proxy", 1);
 const sessionMiddleware = session({
   name: "connect.sid",            // explicitly set the cookie name
   secret: process.env.SESSION_SECRET || "mediverse",
