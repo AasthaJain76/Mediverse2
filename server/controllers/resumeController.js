@@ -34,8 +34,10 @@ export const analyzeResume = async (req, res) => {
 
     console.log("📄 Extracted text preview:", text.slice(0, 300));
 
-    // 2️⃣ Use a valid Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5" }); // ✅ valid model
+    // 2️⃣ Use a VALID Gemini model (updated)
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-pro", // ✅ Updated model name
+    });
 
     const prompt = `
       Analyze the following resume and return ONLY a valid JSON object.
@@ -64,7 +66,7 @@ export const analyzeResume = async (req, res) => {
 
     // 3️⃣ Generate response
     const result = await model.generateContent(prompt);
-    const rawOutput = await result.response.text(); // text from AI
+    const rawOutput = await result.response.text();
 
     console.log("🤖 Gemini raw output:\n", rawOutput);
 

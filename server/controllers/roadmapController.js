@@ -3,7 +3,7 @@ import Roadmap from "../models/Roadmap.js";
 import mongoose from "mongoose";
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const API_KEY = process.env.GEMINI_API_KEY; // keep key in backend .env
+const API_KEY = process.env.GEMINI_API_KEY; // 🔒 keep safe in backend .env
 
 // -------------------- GENERATE ROADMAP --------------------
 export const generateRoadmap = async (req, res) => {
@@ -15,7 +15,7 @@ export const generateRoadmap = async (req, res) => {
 
   try {
     const response = await axios.post(
-      `${BASE_URL}/gemini-1.5:generateContent?key=${API_KEY}`, // ✅ correct model
+      `${BASE_URL}/gemini-2.5-pro:generateContent?key=${API_KEY}`, // ✅ correct model
       {
         contents: [
           {
@@ -30,7 +30,7 @@ Format guidelines:
    - 🔗 Suggested Resources (max 2 per stage)
 3. Keep tone motivational and practical, not like a textbook.
 4. Avoid long paragraphs — focus on short, crisp, actionable points.
-5. The roadmap should feel like a personal mentor guide.`
+5. The roadmap should feel like a personal mentor guide.`,
               },
             ],
           },
@@ -52,6 +52,11 @@ Format guidelines:
     res.status(500).json({ error: "Failed to generate roadmap" });
   }
 };
+
+
+
+
+
 
 // -------------------- SAVE ROADMAP --------------------
 export const saveRoadmap = async (req, res) => {
