@@ -15,7 +15,7 @@ export const generateRoadmap = async (req, res) => {
 
   try {
     const response = await axios.post(
-      `${BASE_URL}/gemini-2.5-pro:generateContent?key=${API_KEY}`, // ✅ correct model
+      `${BASE_URL}/gemini-2.5-flash:generateContent?key=${API_KEY}`, // ✅ correct model
       {
         contents: [
           {

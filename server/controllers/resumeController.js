@@ -36,7 +36,7 @@ export const analyzeResume = async (req, res) => {
 
     // 2️⃣ Use a VALID Gemini model (updated)
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-pro", // ✅ Updated model name
+      model: "gemini-2.5-flash", // ✅ Updated model name
     });
 
     const prompt = `
