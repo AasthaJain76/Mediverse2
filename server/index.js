@@ -45,8 +45,14 @@ const sessionOptions = {
   secret: "supersecret",
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 * 7, httpOnly: true, sameSite: "lax" },
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    httpOnly: true,
+    sameSite: "none", // ❗ MUST be 'none' for cross-site cookies
+    secure: true,     // ❗ required when using https (Render + Vercel are https)
+  },
 };
+
 const sessionMiddleware = session(sessionOptions);
 app.use(sessionMiddleware);
 
