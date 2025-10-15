@@ -79,7 +79,7 @@ app.use("/resume", resumeRoutes);
 const server = createServer(app);
 
 // Initialize Socket.IO
-const io = initIO(server);
+const io = initIO(server,sessionMiddleware);
 
 // Share session with Socket.IO
 io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
