@@ -6,6 +6,8 @@ const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const API_KEY = process.env.GEMINI_API_KEY;
 
 export const generateRoadmap = async (req, res) => {
+  console.log("Authenticated user:", req.user);
+
   const { topic } = req.body;
 
   if (!topic?.trim()) {
