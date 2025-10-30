@@ -1,10 +1,10 @@
-import axios from "axios";
-import Roadmap from "../models/Roadmap.js";
 import mongoose from "mongoose";
+import Roadmap from "../models/Roadmap.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const API_KEY = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// -------------------- GENERATE ROADMAP --------------------
 export const generateRoadmap = async (req, res) => {
   console.log("Authenticated user:", req.user);
 
@@ -15,59 +15,51 @@ export const generateRoadmap = async (req, res) => {
   }
 
   try {
-    // 1️⃣ Call Gemini 2.5 Flash
-    const response = await axios.post(
-      `${BASE_URL}/gemini-2.5-flash:generateContent?key=${API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: `Create a modern, step-by-step roadmap for learning ${topic}.
-Format guidelines:
-1️⃣ Use stage-wise sections with emojis (✅, 🚀, 📚, 🔗)
-2️⃣ For each stage, include:
-   - 🎯 Objective (1 short line)
-   - 📚 Key Topics (bullet points only)
-   - 🔗 Suggested Resources (max 2 per stage)
-3️⃣ Keep tone motivational and practical, not like a textbook.
-4️⃣ Avoid long paragraphs — focus on short, crisp, actionable points.
-5️⃣ The roadmap should feel like a personal mentor guide.`
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1200,
-          topP: 0.95,
-        }
-      }
-    );
+    // 1️⃣ Initialize Gemini model
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // 2️⃣ Extract generated text safely
-    let generatedRoadmap = "No roadmap generated.";
-    try {
-      const candidates = response.data?.candidates || [];
-      generatedRoadmap = candidates[0]?.content?.parts
-        ?.map((p) => p.text)
-        ?.join("\n")
-        ?.trim() || generatedRoadmap;
-    } catch (e) {
-      console.warn("⚠️ Failed to parse roadmap text:", e.message);
-    }
+    // 2️⃣ Generate roadmap content
+    const prompt = `
+You are a professional learning mentor.
+Create a clear, modern, and motivational **step-by-step learning roadmap** for the topic: "${topic}".
+
+Format Guidelines:
+1️⃣ Divide the roadmap into stage-wise sections (e.g., Beginner, Intermediate, Advanced).
+2️⃣ Each stage should include:
+   - 🎯 Objective (1 short motivational line)
+   - 📚 Key Topics (short bullet points)
+   - 🔗 Suggested Resources (max 2 per stage)
+3️⃣ Keep it concise, practical, and encouraging — not like a textbook.
+4️⃣ Use emojis for visual appeal.
+5️⃣ Avoid long paragraphs. Prefer structured bullets.
+`;
+
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096, // 🔥 ensures full roadmap
+        topP: 0.95,
+      },
+    });
+
+    // 3️⃣ Extract full text safely
+    const generatedRoadmap = result.response.text()?.trim() || "No roadmap generated.";
 
     console.log("📜 Generated roadmap:\n", generatedRoadmap);
 
+    // 4️⃣ Return response
     res.json({ topic, roadmap: generatedRoadmap });
   } catch (error) {
-    console.error("❌ Gemini API error:", error.response?.data || error.message);
+    console.error("❌ Gemini API error:", error.message);
     res.status(500).json({ error: "Failed to generate roadmap" });
   }
 };
-
-
-
 
 // -------------------- SAVE ROADMAP --------------------
 export const saveRoadmap = async (req, res) => {
@@ -85,10 +77,9 @@ export const saveRoadmap = async (req, res) => {
     });
 
     await newRoadmap.save();
-
     res.json({ message: "Roadmap saved successfully", roadmap: newRoadmap });
   } catch (error) {
-    console.error("Save roadmap error:", error.message);
+    console.error("❌ Save roadmap error:", error.message);
     res.status(500).json({ error: "Failed to save roadmap" });
   }
 };
@@ -96,12 +87,10 @@ export const saveRoadmap = async (req, res) => {
 // -------------------- GET ALL ROADMAPS FOR USER --------------------
 export const getMyRoadmaps = async (req, res) => {
   try {
-    const roadmaps = await Roadmap.find({ user: req.user._id }).sort({
-      createdAt: -1,
-    });
+    const roadmaps = await Roadmap.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(roadmaps);
   } catch (error) {
-    console.error("Error fetching roadmaps:", error.message);
+    console.error("❌ Error fetching roadmaps:", error.message);
     res.status(500).json({ error: "Failed to fetch roadmaps" });
   }
 };
@@ -126,7 +115,7 @@ export const getRoadmapById = async (req, res) => {
 
     res.json(roadmap);
   } catch (error) {
-    console.error("Error fetching roadmap by id:", error.message);
+    console.error("❌ Error fetching roadmap by id:", error.message);
     res.status(500).json({ error: "Failed to fetch roadmap" });
   }
 };
