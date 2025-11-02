@@ -9,7 +9,11 @@ export default function ResumeResult() {
   useEffect(() => {
     const storedResult = localStorage.getItem("resumeResult");
     if (storedResult) {
-      setResult(JSON.parse(storedResult));
+      try {
+        setResult(JSON.parse(storedResult));
+      } catch {
+        console.error("⚠️ Failed to parse resumeResult from localStorage");
+      }
     }
   }, []);
 
@@ -29,9 +33,11 @@ export default function ResumeResult() {
     );
   }
 
+  // Helper function to render lists or text blocks
   const renderCardSection = (title, content) => {
-    if (!content) return null;
+    if (!content || (Array.isArray(content) && content.length === 0)) return null;
     const items = Array.isArray(content) ? content : [content];
+
     return (
       <div className="mb-8">
         <h3 className="font-semibold text-xl mb-4 text-indigo-700">{title}</h3>
@@ -49,34 +55,53 @@ export default function ResumeResult() {
     );
   };
 
+  const analysis = result.analysis || {};
+  const feedback = analysis.section_feedback || {};
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 p-6">
       <h1 className="text-4xl font-bold mb-10 text-center text-indigo-600">
         📊 Resume Analysis Result
       </h1>
 
-      {renderCardSection("🛠 Extracted Skills", result.analysis?.extracted_skills)}
-      {renderCardSection("❌ Skill Gaps", result.analysis?.skill_gaps)}
-      {renderCardSection("💡 Improvements", result.analysis?.improvements)}
-      {renderCardSection("🔑 ATS Keywords", result.analysis?.ats_keywords)}
-      {renderCardSection("🎯 Suggested Roles", result.analysis?.recommended_roles)}
+      {/* --- MAIN SECTIONS --- */}
+      {renderCardSection("🛠 Extracted Skills", analysis.extracted_skills)}
+      {renderCardSection("❌ Skill Gaps", analysis.skill_gaps)}
+      {renderCardSection("💡 Improvements", analysis.improvements)}
+      {renderCardSection("🔑 ATS Keywords", analysis.ats_keywords)}
+      {renderCardSection("🎯 Suggested Roles", analysis.recommended_roles)}
 
-      {result.analysis?.section_feedback && (
+      {/* --- FEEDBACK SECTIONS --- */}
+      {Object.keys(feedback).length > 0 && (
         <>
-          {renderCardSection("📋 Summary Feedback", result.analysis.section_feedback.summary)}
-          {renderCardSection("🛠 Skills Feedback", result.analysis.section_feedback.skills)}
-          {renderCardSection("💼 Experience Feedback", result.analysis.section_feedback.experience)}
-          {renderCardSection("🎓 Education Feedback", result.analysis.section_feedback.education)}
-          {renderCardSection("📂 Projects Feedback", result.analysis.section_feedback.projects)}
+          {renderCardSection("📋 Summary Feedback", feedback.summary)}
+          {renderCardSection("🛠 Skills Feedback", feedback.skills)}
+          {renderCardSection("💼 Experience Feedback", feedback.experience)}
+          {renderCardSection("🎓 Education Feedback", feedback.education)}
+          {renderCardSection("📂 Projects Feedback", feedback.projects)}
         </>
       )}
 
-      {result.analysis?.score && (
+      {/* --- SCORE --- */}
+      {analysis.score ? (
         <div className="mb-6 bg-indigo-100 text-indigo-800 p-4 rounded-2xl text-center font-semibold shadow-sm">
-          ⭐ Resume Score: {result.analysis.score} / 100
+          ⭐ Resume Score: {analysis.score} / 100
+        </div>
+      ) : (
+        <div className="mb-6 text-gray-500 italic text-center">
+          📉 Score not available — AI may have returned raw output only.
         </div>
       )}
 
+      {/* --- RAW OUTPUT / DEBUG FALLBACK --- */}
+      {analysis.raw && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6">
+          <p className="font-semibold text-yellow-800">⚠️ AI returned raw text:</p>
+          <pre className="text-sm text-gray-700 whitespace-pre-wrap mt-2">{analysis.raw}</pre>
+        </div>
+      )}
+
+      {/* --- EXTRACTED TEXT --- */}
       {result.extractedText && (
         <div className="mt-6 bg-white p-4 rounded-2xl shadow-md border border-indigo-100">
           <button
@@ -93,6 +118,7 @@ export default function ResumeResult() {
         </div>
       )}
 
+      {/* --- BOTTOM ACTION --- */}
       <div className="mt-10 text-center">
         <button
           onClick={() => navigate("/resume-analyze")}
