@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import pdfParse from "pdf-parse";
+import pkg from "pdf-parse";
+const pdfParse = pkg;
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
