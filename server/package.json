@@ -38,7 +38,6 @@
     "pdf2json": "^3.2.0",
     "react-markdown": "^10.1.0",
     "slugify": "^1.6.6",
-    "socket.io": "^4.8.1",
-    "tesseract.js": "^6.0.1"
+    "socket.io": "^4.8.1"
   }
 }
