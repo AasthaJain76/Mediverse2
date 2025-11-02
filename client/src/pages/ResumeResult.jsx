@@ -22,7 +22,7 @@ export default function ResumeResult() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-pink-50 p-6">
         <p className="text-gray-500 mb-4 text-center text-lg">
-          ⚠️ No resume result found. Upload a resume to see the analysis.
+          ⚠️ No resume result found. Upload a resume to see analysis.
         </p>
         <button
           onClick={() => navigate("/resume-analyze")}
@@ -34,10 +34,9 @@ export default function ResumeResult() {
     );
   }
 
-  const analysis = result.analysis || {};
-  const feedback = analysis.section_feedback || {};
+  const analysis = result?.analysis || {};
+  const feedback = analysis?.section_feedback || {};
 
-  // Helper for rendering lists or single text blocks
   const renderCardSection = (title, content, color = "indigo") => {
     if (!content || (Array.isArray(content) && content.length === 0)) return null;
     const items = Array.isArray(content) ? content : [content];
@@ -66,9 +65,13 @@ export default function ResumeResult() {
     );
   };
 
+  // ✨ fallback for missing Gemini keys (still show something)
+  const emptyCheck = (data) =>
+    data && typeof data === "object" && Object.keys(data).length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 p-6">
-      {/* Header */}
+      {/* Title */}
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -79,7 +82,7 @@ export default function ResumeResult() {
       </motion.h1>
 
       <div className="max-w-6xl mx-auto">
-        {/* SCORE */}
+        {/* Score */}
         {analysis.score ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -95,15 +98,15 @@ export default function ResumeResult() {
           </p>
         )}
 
-        {/* MAIN SECTIONS */}
-        {renderCardSection("🛠 Extracted Skills", analysis.extracted_skills)}
-        {renderCardSection("❌ Skill Gaps", analysis.skill_gaps, "red")}
+        {/* Sections */}
+        {renderCardSection("🛠 Extracted Skills", analysis.extracted_skills || analysis.skills)}
+        {renderCardSection("❌ Skill Gaps", analysis.skill_gaps || analysis.gaps, "red")}
         {renderCardSection("💡 Improvements", analysis.improvements, "yellow")}
-        {renderCardSection("🔑 ATS Keywords", analysis.ats_keywords, "green")}
-        {renderCardSection("🎯 Suggested Roles", analysis.recommended_roles, "blue")}
+        {renderCardSection("🔑 ATS Keywords", analysis.ats_keywords || analysis.ats, "green")}
+        {renderCardSection("🎯 Suggested Roles", analysis.recommended_roles || analysis.roles, "blue")}
 
-        {/* FEEDBACK SECTIONS */}
-        {Object.keys(feedback).length > 0 && (
+        {/* Feedback Sections */}
+        {emptyCheck(feedback) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -119,7 +122,7 @@ export default function ResumeResult() {
           </motion.div>
         )}
 
-        {/* RAW OUTPUT (if any) */}
+        {/* Raw output (debug mode) */}
         {analysis.raw && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -127,12 +130,12 @@ export default function ResumeResult() {
             transition={{ duration: 0.5 }}
             className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 mb-6"
           >
-            <p className="font-semibold text-yellow-800">⚠️ Raw AI Output:</p>
+            <p className="font-semibold text-yellow-800">⚠️ AI returned raw text:</p>
             <pre className="text-sm text-gray-700 whitespace-pre-wrap mt-2">{analysis.raw}</pre>
           </motion.div>
         )}
 
-        {/* EXTRACTED TEXT */}
+        {/* Extracted Text Viewer */}
         {result.extractedText && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -154,7 +157,7 @@ export default function ResumeResult() {
           </motion.div>
         )}
 
-        {/* ACTION BUTTON */}
+        {/* Button */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
