@@ -14,7 +14,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "mammoth": "^1.11.0",
-    "pdf-extraction": "^1.0.2",
-    "tesseract.js": "^6.0.1"
+    "node-tesseract-ocr": "^2.2.1",
+    "pdf-extraction": "^1.0.2"
   }
 }
