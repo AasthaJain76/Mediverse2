@@ -1,12 +1,13 @@
+// ✅ Load environment variables
 import dotenv from "dotenv";
 dotenv.config();
 
-import pkg from "pdf-parse";
-const pdfParse = pkg;
+// ✅ Native ESM imports
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// ✅ Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const analyzeResume = async (req, res) => {
@@ -19,9 +20,14 @@ export const analyzeResume = async (req, res) => {
 
     // 1️⃣ Extract text
     if (ext === "pdf") {
+      // 👇 Dynamically import pdf-parse (CJS module)
+      const pdfParseModule = await import("pdf-parse");
+      const pdfParse = pdfParseModule.default || pdfParseModule;
+
       const pdfData = await pdfParse(req.file.buffer);
       text = pdfData.text?.trim() || "";
 
+      // fallback to OCR if text extraction fails
       if (!text && req.file.size > 40 * 1024) {
         console.log("⚠️ No text found, switching to OCR...");
         const bufferArray = new Uint8Array(req.file.buffer);
@@ -39,11 +45,11 @@ export const analyzeResume = async (req, res) => {
 
     // 2️⃣ Clean & normalize text
     let cleaned = text;
-    cleaned = cleaned.replace(/([a-z])\n([a-z])/gi, "$1$2");     // merge broken words
-    cleaned = cleaned.replace(/\s{2,}/g, " ");                    // collapse multiple spaces
-    cleaned = cleaned.replace(/\n{2,}/g, "\n");                   // normalize newlines
-    cleaned = cleaned.replace(/([a-z])([A-Z])/g, "$1 $2");        // add space between camelCase
-    cleaned = cleaned.replace(/[:·•]/g, " - ");                   // clean symbols
+    cleaned = cleaned.replace(/([a-z])\n([a-z])/gi, "$1$2"); // merge broken words
+    cleaned = cleaned.replace(/\s{2,}/g, " "); // collapse multiple spaces
+    cleaned = cleaned.replace(/\n{2,}/g, "\n"); // normalize newlines
+    cleaned = cleaned.replace(/([a-z])([A-Z])/g, "$1 $2"); // add space between camelCase
+    cleaned = cleaned.replace(/[:·•]/g, " - "); // clean symbols
 
     const sections = [
       "Professional Summary",
@@ -114,7 +120,8 @@ Return JSON in this exact format:
         const jsonText = rawOutput.slice(jsonStart, jsonEnd + 1);
         analysis = JSON.parse(jsonText);
       } else throw new Error("No JSON found");
-    } catch {
+    } catch (e) {
+      console.warn("⚠️ Gemini returned non-JSON output, wrapping as raw text.");
       analysis = { raw: rawOutput };
     }
 
