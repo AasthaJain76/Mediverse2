@@ -4,15 +4,15 @@ dotenv.config();
 
 // ✅ Native ESM imports
 import mammoth from "mammoth";
-import Tesseract from "tesseract.js";
+import tesseract from "node-tesseract-ocr"; // 👈 safer OCR for ESM
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ✅ Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// =============================================
-// 🧩 Robust pdf-parse Loader (for ESM projects)
-// =============================================
+// =======================================================
+// 🧩 Robust pdf-parse Loader (for "type": "module")
+// =======================================================
 async function loadPdfParse() {
   const mod = await import("pdf-parse");
   let fn = null;
@@ -48,9 +48,9 @@ async function loadPdfParse() {
   return fn;
 }
 
-// =============================================
+// =======================================================
 // 🧠 MAIN CONTROLLER — Analyze Resume
-// =============================================
+// =======================================================
 export const analyzeResume = async (req, res) => {
   try {
     if (!req.file)
@@ -67,12 +67,15 @@ export const analyzeResume = async (req, res) => {
       const pdfData = await pdfParse(req.file.buffer);
       text = pdfData.text?.trim() || "";
 
-      // 🧾 OCR fallback if empty text
+      // 🧾 OCR fallback if text missing
       if (!text && req.file.size > 40 * 1024) {
         console.log("⚠️ No text found, switching to OCR...");
-        const bufferArray = new Uint8Array(req.file.buffer);
-        const ocrResult = await Tesseract.recognize(bufferArray, "eng");
-        text = ocrResult.data.text?.trim() || "";
+        try {
+          text = await tesseract.recognize(req.file.buffer, { lang: "eng" });
+        } catch (ocrErr) {
+          console.warn("⚠️ OCR failed:", ocrErr.message);
+          text = "";
+        }
       }
     } else if (ext === "docx") {
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
@@ -113,33 +116,42 @@ export const analyzeResume = async (req, res) => {
     console.log("🧹 Cleaned Resume Text Preview:\n", cleaned.slice(0, 400));
 
     // ------------------------------------------
-    // 3️⃣ GEMINI PROMPT
+    // 3️⃣ ENHANCED GEMINI PROMPT
     // ------------------------------------------
     const prompt = `
-You are a professional resume analyzer.
-Respond ONLY with valid JSON — no markdown or explanations.
+You are an expert **Resume Analyzer** for Frontend & Full-Stack Developer roles.
 
-Analyze the following resume for a Frontend/Full-Stack Developer role.
+You must reply **only with JSON**, no markdown or explanations.
+
+Analyze the following resume text and return a structured evaluation.
+If some section (like experience, projects, or education) is missing or unclear,
+still include it with an empty string or empty array.
 
 Resume:
 ${cleaned}
 
-Return JSON strictly in this format:
+Return strictly valid JSON in this format:
 {
-  "improvements": ["specific improvement suggestions"],
-  "extracted_skills": ["skills detected"],
-  "skill_gaps": ["missing but relevant skills"],
+  "improvements": ["specific resume improvements"],
+  "extracted_skills": ["skills detected from resume"],
+  "skill_gaps": ["important but missing skills for frontend/fullstack roles"],
   "score": number (0-100),
   "recommended_roles": ["role1", "role2"],
-  "ats_keywords": ["ATS friendly keywords"],
+  "ats_keywords": ["ATS-friendly technical keywords to include"],
   "section_feedback": {
-    "summary": "feedback on summary",
-    "skills": "feedback on skills section",
-    "experience": "feedback on experience section",
-    "education": "feedback on education section",
-    "projects": "feedback on projects section"
+    "summary": "feedback or empty string",
+    "skills": "feedback or empty string",
+    "experience": "feedback or empty string",
+    "education": "feedback or empty string",
+    "projects": "feedback or empty string"
   }
 }
+
+Rules:
+- Always include all fields, even if empty.
+- Never include commentary, markdown, or backticks.
+- Score should reflect how strong this resume is (0 = weak, 100 = exceptional).
+- Focus on Frontend/MERN Stack context.
 `;
 
     // ------------------------------------------
@@ -169,9 +181,18 @@ Return JSON strictly in this format:
         const jsonText = rawOutput.slice(jsonStart, jsonEnd + 1);
         analysis = JSON.parse(jsonText);
       } else throw new Error("No JSON found");
-    } catch (err) {
+    } catch {
       console.warn("⚠️ AI output not valid JSON, returning raw text.");
-      analysis = { raw: rawOutput };
+      analysis = {
+        improvements: [],
+        extracted_skills: [],
+        skill_gaps: [],
+        score: 0,
+        recommended_roles: [],
+        ats_keywords: [],
+        section_feedback: {},
+        raw: rawOutput,
+      };
     }
 
     // ------------------------------------------
