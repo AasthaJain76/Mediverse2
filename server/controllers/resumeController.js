@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import pdf from "pdf-extraction";
+import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -10,19 +10,19 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export const analyzeResume = async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file)
       return res.status(400).json({ error: "No file uploaded" });
-    }
 
     const ext = req.file.originalname.split(".").pop().toLowerCase();
     let text = "";
 
     // 1️⃣ Extract text
     if (ext === "pdf") {
-      const pdfData = await pdf(req.file.buffer);
+      const pdfData = await pdfParse(req.file.buffer);
       text = pdfData.text?.trim() || "";
-      if (!text && req.file.size > 30 * 1024) {
-        console.log("⚠️ Switching to OCR...");
+
+      if (!text && req.file.size > 40 * 1024) {
+        console.log("⚠️ No text found, switching to OCR...");
         const bufferArray = new Uint8Array(req.file.buffer);
         const ocrResult = await Tesseract.recognize(bufferArray, "eng");
         text = ocrResult.data.text?.trim() || "";
@@ -36,17 +36,15 @@ export const analyzeResume = async (req, res) => {
 
     if (!text) return res.status(400).json({ error: "No text extracted" });
 
-    // 2️⃣ Clean text for readability
-    let cleaned = text
-      .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .replace(/:\s?/g, "-")
-      .replace(/\s{2,}/g, " ")
-      .replace(/([A-Za-z])(\d)/g, "$1 $2")
-      .replace(/([0-9])([A-Za-z])/g, "$1 $2")
-      .replace(/([^\n])([A-Z][a-z])/g, "$1\n$2")
-      .replace(/\n{3,}/g, "\n\n");
+    // 2️⃣ Clean & normalize text
+    let cleaned = text;
+    cleaned = cleaned.replace(/([a-z])\n([a-z])/gi, "$1$2");     // merge broken words
+    cleaned = cleaned.replace(/\s{2,}/g, " ");                    // collapse multiple spaces
+    cleaned = cleaned.replace(/\n{2,}/g, "\n");                   // normalize newlines
+    cleaned = cleaned.replace(/([a-z])([A-Z])/g, "$1 $2");        // add space between camelCase
+    cleaned = cleaned.replace(/[:·•]/g, " - ");                   // clean symbols
 
-    const sectionKeywords = [
+    const sections = [
       "Professional Summary",
       "Skills",
       "Education",
@@ -56,20 +54,20 @@ export const analyzeResume = async (req, res) => {
       "Achievements",
       "Technical Skills",
     ];
-    sectionKeywords.forEach((kw) => {
-      const regex = new RegExp(kw, "gi");
+    sections.forEach((kw) => {
+      const regex = new RegExp(`\\b${kw}\\b`, "gi");
       cleaned = cleaned.replace(regex, `\n\n${kw.toUpperCase()}\n`);
     });
 
-    cleaned = cleaned.replace(/\s{2,}/g, " ").trim();
-    console.log("🧹 Cleaned preview:", cleaned.slice(0, 250));
+    cleaned = cleaned.trim();
+    console.log("🧹 Cleaned Resume Text Preview:\n", cleaned.slice(0, 400));
 
-    // 3️⃣ Build strict JSON prompt
+    // 3️⃣ Gemini prompt
     const prompt = `
 You are a professional resume analyzer.
-Respond ONLY with valid JSON — no markdown, no code fences, no explanations.
+Respond ONLY with valid JSON, no markdown or explanations.
 
-Analyze the resume text below for a Frontend/Full-Stack Developer role.
+Analyze the resume for a Frontend/Full-Stack Developer role.
 
 Resume:
 ${cleaned}
@@ -92,7 +90,7 @@ Return JSON in this exact format:
 }
 `;
 
-    // 4️⃣ Generate content with Gemini
+    // 4️⃣ Generate content
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -103,9 +101,9 @@ Return JSON in this exact format:
       },
     });
 
-    // 5️⃣ Parse model output safely
+    // 5️⃣ Parse Gemini output safely
     const rawOutput = result.response.text();
-    console.log("🤖 Gemini raw output:", rawOutput.slice(0, 400));
+    console.log("🤖 Gemini Raw Output:\n", rawOutput.slice(0, 400));
 
     let analysis;
     try {
@@ -119,7 +117,7 @@ Return JSON in this exact format:
       analysis = { raw: rawOutput };
     }
 
-    // 6️⃣ Send to frontend
+    // 6️⃣ Send result
     res.json({
       extractedText: cleaned.slice(0, 5000),
       analysis,
