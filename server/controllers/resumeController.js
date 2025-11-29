@@ -9,32 +9,11 @@ dotenv.config();
 // ==========================================
 import mammoth from "mammoth";
 import tesseract from "node-tesseract-ocr";
+import pdfParse from "pdf-parse";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Gemini Client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// ==========================================
-// 🔧 FINAL WORKING pdf-parse LOADER (100% ESM SAFE)
-// ==========================================
-async function loadPdfParse() {
-  const mod = await import("pdf-parse");
-
-  // pdf-parse has ONLY ONE real working export on Render:
-  // default.pdf  → the actual function
-  const pdfParse =
-    mod.default?.pdf ||      // most common
-    mod.pdf ||               // rare
-    mod.default ||           // fallback
-    mod;                     // worst fallback
-
-  if (typeof pdfParse !== "function") {
-    console.error("Loaded pdf-parse keys:", Object.keys(mod));
-    throw new Error("❌ pdf-parse did not export a function");
-  }
-
-  return pdfParse;
-}
 
 // ==========================================
 // 🧠 MAIN CONTROLLER — Analyze Resume
@@ -51,8 +30,6 @@ export const analyzeResume = async (req, res) => {
     // 1️⃣ TEXT EXTRACTION
     // ------------------------------------------------------------------
     if (ext === "pdf") {
-      const pdfParse = await loadPdfParse();
-
       const pdfData = await pdfParse(req.file.buffer);
       text = pdfData.text?.trim() || "";
 
@@ -62,11 +39,9 @@ export const analyzeResume = async (req, res) => {
           text = await tesseract.recognize(req.file.buffer, { lang: "eng" });
         } catch {}
       }
-
     } else if (ext === "docx") {
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
       text = result.value?.trim() || "";
-
     } else {
       return res.status(400).json({ error: "Unsupported file format" });
     }
