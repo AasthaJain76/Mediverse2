@@ -15,22 +15,34 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ==========================================
-// 🔧 Simplified pdf-parse dynamic loader
+// 🔧 FINAL WORKING pdf-parse LOADER (100% ESM SAFE)
 // ==========================================
 async function loadPdfParse() {
   const mod = await import("pdf-parse");
-  return mod.default || mod; // covers all build shapes
-}
 
+  // pdf-parse has ONLY ONE real working export on Render:
+  // default.pdf  → the actual function
+  const pdfParse =
+    mod.default?.pdf ||      // most common
+    mod.pdf ||               // rare
+    mod.default ||           // fallback
+    mod;                     // worst fallback
+
+  if (typeof pdfParse !== "function") {
+    console.error("Loaded pdf-parse keys:", Object.keys(mod));
+    throw new Error("❌ pdf-parse did not export a function");
+  }
+
+  return pdfParse;
+}
 
 // ==========================================
 // 🧠 MAIN CONTROLLER — Analyze Resume
 // ==========================================
 export const analyzeResume = async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file)
       return res.status(400).json({ error: "No file uploaded" });
-    }
 
     const ext = req.file.originalname.split(".").pop().toLowerCase();
     let text = "";
@@ -40,18 +52,15 @@ export const analyzeResume = async (req, res) => {
     // ------------------------------------------------------------------
     if (ext === "pdf") {
       const pdfParse = await loadPdfParse();
+
       const pdfData = await pdfParse(req.file.buffer);
       text = pdfData.text?.trim() || "";
 
-      // If scanned PDF → fallback to OCR
       if (!text && req.file.size > 40 * 1024) {
+        console.log("⚠ No text in PDF — running OCR");
         try {
-          console.log("⚠️ PDF contains no text — running OCR...");
           text = await tesseract.recognize(req.file.buffer, { lang: "eng" });
-        } catch (ocrErr) {
-          console.log("⚠️ OCR failed:", ocrErr.message);
-          text = "";
-        }
+        } catch {}
       }
 
     } else if (ext === "docx") {
@@ -62,9 +71,8 @@ export const analyzeResume = async (req, res) => {
       return res.status(400).json({ error: "Unsupported file format" });
     }
 
-    if (!text) {
+    if (!text)
       return res.status(400).json({ error: "No text extracted from resume" });
-    }
 
     // ------------------------------------------------------------------
     // 2️⃣ CLEANING & NORMALIZATION
@@ -83,8 +91,7 @@ export const analyzeResume = async (req, res) => {
     // 3️⃣ GEMINI PROMPT — JSON ONLY
     // ------------------------------------------------------------------
     const prompt = `
-You are an expert resume analyzer for Software Engineering roles.
-Respond ONLY with valid JSON. No markdown.
+Reply ONLY with valid JSON. No markdown.
 
 Return:
 {
@@ -108,16 +115,14 @@ ${cleaned}
 `;
 
     // ------------------------------------------------------------------
-    // 4️⃣ GEMINI REQUEST (NO AbortException ANYWHERE)
+    // 4️⃣ GEMINI REQUEST
     // ------------------------------------------------------------------
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash"
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const result = await model.generateContent(prompt);
     const rawOutput = result.response.text();
 
-    console.log("🤖 Raw Gemini Output:\n", rawOutput.slice(0, 300));
+    console.log("🤖 Raw Gemini Output:", rawOutput.slice(0, 200));
 
     // ------------------------------------------------------------------
     // 5️⃣ JSON PARSING
@@ -127,28 +132,24 @@ ${cleaned}
       const first = rawOutput.indexOf("{");
       const last = rawOutput.lastIndexOf("}");
       const json = rawOutput.slice(first, last + 1);
-
       analysis = JSON.parse(json);
-    } catch (e) {
-      analysis = {
-        error: "Model did not return valid JSON",
-        raw: rawOutput
-      };
+    } catch {
+      analysis = { error: "Model did not return valid JSON", raw: rawOutput };
     }
 
     // ------------------------------------------------------------------
     // 6️⃣ SEND RESPONSE
     // ------------------------------------------------------------------
-    return res.json({
+    res.json({
       extractedText: cleaned.slice(0, 5000),
       analysis
     });
 
   } catch (err) {
     console.error("❌ analyzeResume error:", err);
-    return res.status(500).json({
+    res.status(500).json({
       error: "Failed to analyze resume",
-      details: err.message,
+      details: err.message
     });
   }
 };
