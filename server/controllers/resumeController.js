@@ -4,11 +4,16 @@ dotenv.config();
 
 // ✅ Native ESM imports
 import mammoth from "mammoth";
-import tesseract from "node-tesseract-ocr"; // 👈 safer OCR for ESM
+import tesseract from "node-tesseract-ocr"; 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ✅ Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// ========== FIX FOR GEMINI AbortException BUG ==========
+global.AbortException ??= class AbortException extends Error {};
+// ========================================================
+
 
 // =======================================================
 // 🧩 Robust pdf-parse Loader (for "type": "module")
@@ -48,6 +53,7 @@ async function loadPdfParse() {
   return fn;
 }
 
+
 // =======================================================
 // 🧠 MAIN CONTROLLER — Analyze Resume
 // =======================================================
@@ -67,7 +73,6 @@ export const analyzeResume = async (req, res) => {
       const pdfData = await pdfParse(req.file.buffer);
       text = pdfData.text?.trim() || "";
 
-      // 🧾 OCR fallback if text missing
       if (!text && req.file.size > 40 * 1024) {
         console.log("⚠️ No text found, switching to OCR...");
         try {
@@ -90,12 +95,12 @@ export const analyzeResume = async (req, res) => {
     // ------------------------------------------
     // 2️⃣ CLEAN & NORMALIZE TEXT
     // ------------------------------------------
-    let cleaned = text;
-    cleaned = cleaned.replace(/([a-z])\n([a-z])/gi, "$1$2");
-    cleaned = cleaned.replace(/\s{2,}/g, " ");
-    cleaned = cleaned.replace(/\n{2,}/g, "\n");
-    cleaned = cleaned.replace(/([a-z])([A-Z])/g, "$1 $2");
-    cleaned = cleaned.replace(/[:·•]/g, " - ");
+    let cleaned = text
+      .replace(/([a-z])\n([a-z])/gi, "$1$2")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\n{2,}/g, "\n")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[:·•]/g, " - ");
 
     const sections = [
       "Professional Summary",
@@ -108,8 +113,10 @@ export const analyzeResume = async (req, res) => {
       "Technical Skills",
     ];
     sections.forEach((kw) => {
-      const regex = new RegExp(`\\b${kw}\\b`, "gi");
-      cleaned = cleaned.replace(regex, `\n\n${kw.toUpperCase()}\n`);
+      cleaned = cleaned.replace(
+        new RegExp(`\\b${kw}\\b`, "gi"),
+        `\n\n${kw.toUpperCase()}\n`
+      );
     });
 
     cleaned = cleaned.trim();
@@ -119,59 +126,63 @@ export const analyzeResume = async (req, res) => {
     // 3️⃣ ENHANCED GEMINI PROMPT
     // ------------------------------------------
     const prompt = `
-You are an expert **Resume Analyzer** for Frontend & Full-Stack Developer roles.
+You are an expert Resume Analyzer for Frontend & Full-Stack Developer roles.
 
-You must reply **only with JSON**, no markdown or explanations.
+Reply ONLY with JSON. No markdown, no explanations.
 
-Analyze the following resume text and return a structured evaluation.
-If some section (like experience, projects, or education) is missing or unclear,
-still include it with an empty string or empty array.
+Analyze the following resume text and return:
 
-Resume:
-${cleaned}
-
-Return strictly valid JSON in this format:
 {
-  "improvements": ["specific resume improvements"],
-  "extracted_skills": ["skills detected from resume"],
-  "skill_gaps": ["important but missing skills for frontend/fullstack roles"],
-  "score": number (0-100),
-  "recommended_roles": ["role1", "role2"],
-  "ats_keywords": ["ATS-friendly technical keywords to include"],
+  "improvements": [],
+  "extracted_skills": [],
+  "skill_gaps": [],
+  "score": number,
+  "recommended_roles": [],
+  "ats_keywords": [],
   "section_feedback": {
-    "summary": "feedback or empty string",
-    "skills": "feedback or empty string",
-    "experience": "feedback or empty string",
-    "education": "feedback or empty string",
-    "projects": "feedback or empty string"
+    "summary": "",
+    "skills": "",
+    "experience": "",
+    "education": "",
+    "projects": ""
   }
 }
 
-Rules:
-- Always include all fields, even if empty.
-- Never include commentary, markdown, or backticks.
-- Score should reflect how strong this resume is (0 = weak, 100 = exceptional).
-- Focus on Frontend/MERN Stack context.
+Resume:
+${cleaned}
 `;
 
     // ------------------------------------------
-    // 4️⃣ GEMINI REQUEST
+    // 4️⃣ GEMINI REQUEST (with AbortException FIX)
     // ------------------------------------------
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 2000,
-        topP: 0.9,
-      },
-    });
+
+    let result;
+
+    try {
+      result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2000,
+          topP: 0.9,
+        },
+      });
+    } catch (err) {
+      if (err.name === "AbortException") {
+        console.error("⚠️ Gemini aborted internally.");
+        return res.status(500).json({
+          error: "Gemini internal abort — try again.",
+        });
+      }
+      throw err;
+    }
 
     const rawOutput = result.response.text();
-    console.log("🤖 Gemini Raw Output (first 400 chars):\n", rawOutput.slice(0, 400));
+    console.log("🤖 Gemini Raw Output (first 400):\n", rawOutput.slice(0, 400));
 
     // ------------------------------------------
-    // 5️⃣ PARSE JSON OUTPUT
+    // 5️⃣ JSON PARSING
     // ------------------------------------------
     let analysis;
     try {
@@ -182,7 +193,6 @@ Rules:
         analysis = JSON.parse(jsonText);
       } else throw new Error("No JSON found");
     } catch {
-      console.warn("⚠️ AI output not valid JSON, returning raw text.");
       analysis = {
         improvements: [],
         extracted_skills: [],
@@ -202,6 +212,7 @@ Rules:
       extractedText: cleaned.slice(0, 5000),
       analysis,
     });
+
   } catch (err) {
     console.error("❌ analyzeResume failed:", err);
     res.status(500).json({
