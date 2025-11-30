@@ -5,13 +5,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ==========================================
-//  Native ESM imports
+//  Imports
 // ==========================================
 import mammoth from "mammoth";
-import tesseract from "node-tesseract-ocr";
-import pkg from "pdf-extraction";
-const { pdfToText } = pkg;
-
+import pdf from "pdf-extraction";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Gemini Client
@@ -29,20 +26,11 @@ export const analyzeResume = async (req, res) => {
     let text = "";
 
     // ---------------------------------------------------------------
-    // 1️⃣ TEXT EXTRACTION
+    // 1️⃣ EXTRACT TEXT
     // ---------------------------------------------------------------
     if (ext === "pdf") {
-      try {
-        text = await pdfToText(req.file.buffer);
-        text = text?.trim() || "";
-      } catch (err) {
-        console.log("❌ PDF extraction failed, trying OCR...", err);
-      }
-
-      // No text? fallback to OCR
-      if (!text) {
-        text = await tesseract.recognize(req.file.buffer, { lang: "eng" });
-      }
+      const data = await pdf(req.file.buffer);
+      text = data.text?.trim() || "";
     }
 
     else if (ext === "docx") {
@@ -103,6 +91,8 @@ ${cleaned}
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const rawOutput = result.response.text();
+
+    console.log("Gemini Output:", rawOutput.slice(0, 200));
 
     // ---------------------------------------------------------------
     // 5️⃣ JSON PARSING
