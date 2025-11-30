@@ -1,22 +1,22 @@
 // ==========================================
-// ✅ Load environment variables
+//  Load Env
 // ==========================================
 import dotenv from "dotenv";
 dotenv.config();
 
 // ==========================================
-// ✅ Native ESM imports
+//  Native ESM imports
 // ==========================================
 import mammoth from "mammoth";
 import tesseract from "node-tesseract-ocr";
-import pdfParse from "pdf-parse";
+import { pdfToText } from "pdf-extraction";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Gemini Client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ==========================================
-// 🧠 MAIN CONTROLLER — Analyze Resume
+//  MAIN CONTROLLER — Analyze Resume
 // ==========================================
 export const analyzeResume = async (req, res) => {
   try {
@@ -26,32 +26,38 @@ export const analyzeResume = async (req, res) => {
     const ext = req.file.originalname.split(".").pop().toLowerCase();
     let text = "";
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // 1️⃣ TEXT EXTRACTION
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
     if (ext === "pdf") {
-      const pdfData = await pdfParse(req.file.buffer);
-      text = pdfData.text?.trim() || "";
-
-      if (!text && req.file.size > 40 * 1024) {
-        console.log("⚠ No text in PDF — running OCR");
-        try {
-          text = await tesseract.recognize(req.file.buffer, { lang: "eng" });
-        } catch {}
+      try {
+        text = await pdfToText(req.file.buffer);
+        text = text?.trim() || "";
+      } catch (err) {
+        console.log("❌ PDF extraction failed, trying OCR...", err);
       }
-    } else if (ext === "docx") {
+
+      // No text? fallback to OCR
+      if (!text) {
+        text = await tesseract.recognize(req.file.buffer, { lang: "eng" });
+      }
+    }
+
+    else if (ext === "docx") {
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
       text = result.value?.trim() || "";
-    } else {
+    }
+
+    else {
       return res.status(400).json({ error: "Unsupported file format" });
     }
 
     if (!text)
       return res.status(400).json({ error: "No text extracted from resume" });
 
-    // ------------------------------------------------------------------
-    // 2️⃣ CLEANING & NORMALIZATION
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
+    // 2️⃣ CLEAN TEXT
+    // ---------------------------------------------------------------
     let cleaned = text
       .replace(/([a-z])\n([a-z])/gi, "$1 $2")
       .replace(/\n{2,}/g, "\n")
@@ -60,11 +66,11 @@ export const analyzeResume = async (req, res) => {
       .replace(/[:·•]/g, " - ")
       .trim();
 
-    console.log("🧹 Cleaned preview:\n", cleaned.slice(0, 300));
+    console.log("Cleaned text preview:\n", cleaned.slice(0, 300));
 
-    // ------------------------------------------------------------------
-    // 3️⃣ GEMINI PROMPT — JSON ONLY
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
+    // 3️⃣ GEMINI PROMPT
+    // ---------------------------------------------------------------
     const prompt = `
 Reply ONLY with valid JSON. No markdown.
 
@@ -89,19 +95,16 @@ Resume text:
 ${cleaned}
 `;
 
-    // ------------------------------------------------------------------
-    // 4️⃣ GEMINI REQUEST
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
+    // 4️⃣ CALL GEMINI
+    // ---------------------------------------------------------------
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
     const result = await model.generateContent(prompt);
     const rawOutput = result.response.text();
 
-    console.log("🤖 Raw Gemini Output:", rawOutput.slice(0, 200));
-
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // 5️⃣ JSON PARSING
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
     let analysis;
     try {
       const first = rawOutput.indexOf("{");
@@ -109,12 +112,12 @@ ${cleaned}
       const json = rawOutput.slice(first, last + 1);
       analysis = JSON.parse(json);
     } catch {
-      analysis = { error: "Model did not return valid JSON", raw: rawOutput };
+      analysis = { error: "Invalid JSON from model", raw: rawOutput };
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
     // 6️⃣ SEND RESPONSE
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------
     res.json({
       extractedText: cleaned.slice(0, 5000),
       analysis
