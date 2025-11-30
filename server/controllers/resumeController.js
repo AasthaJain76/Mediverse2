@@ -9,7 +9,9 @@ dotenv.config();
 // ==========================================
 import mammoth from "mammoth";
 import tesseract from "node-tesseract-ocr";
-import { pdfToText } from "pdf-extraction";
+import pkg from "pdf-extraction";
+const { pdfToText } = pkg;
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Gemini Client
