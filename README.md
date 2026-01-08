@@ -41,18 +41,15 @@ MediVerse is a **full-stack MERN platform** that enables real-time discussions, 
 
 ## 📂 Project Structure
 
-'''MediVerse/
-│
-├── client/ # React frontend
-│ ├── components/
-│ ├── pages/
-│ └── services/
-│
-├── server/ # Node.js backend
-│ ├── controllers/
-│ ├── routes/
-│ ├── models/
-│ └── middleware/
-│
-└── README.md
-'''
+MediVerse/
+  client/        # React frontend
+    components/   # Reusable UI components
+    pages/        # React pages
+    services/     # API calls
+  server/        # Node.js backend
+    controllers/  # Request handlers
+    routes/       # API endpoints
+    models/       # Mongoose models
+    middleware/   # Auth, error handling
+  README.md       # Documentation
+
