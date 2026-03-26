@@ -27,7 +27,7 @@ function App() {
   
   return !loading ? (
     <div className='min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-white to-purple-50'>
-      <div className='w-full block'>
+     
         <Header />
         <main className="flex-grow">
         <Outlet />
@@ -35,7 +35,7 @@ function App() {
         <Footer />
         {/* ✅ Toast container goes here */}
         <ToastContainer position="top-right" autoClose={3000} />
-      </div>
+     
     </div>
   ) : null
 }
