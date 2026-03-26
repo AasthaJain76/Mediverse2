@@ -26,10 +26,10 @@ function App() {
   }, [])
   
   return !loading ? (
-    <div className='min-h-screen flex flex-wrap content-between bg-gradient-to-br from-indigo-50 via-white to-purple-50'>
+    <div className='min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-white to-purple-50'>
       <div className='w-full block'>
         <Header />
-        <main>
+        <main className="flex-grow">
         <Outlet />
         </main>
         <Footer />
