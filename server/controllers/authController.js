@@ -117,6 +117,11 @@ export const loginUser = (req, res, next) => {
 
 export const getMe = async (req, res) => {
   try {
+    console.log("Session ID:", req.sessionID);
+    console.log("Session:", req.session);
+    console.log("User:", req.user);
+    console.log("isAuthenticated:", req.isAuthenticated());
+
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }

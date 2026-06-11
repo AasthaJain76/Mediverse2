@@ -39,16 +39,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // --- Session ---
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
+// --- Session ---
+app.enable("trust proxy");
+
 const sessionMiddleware = session({
-  name: "connect.sid",            // explicitly set the cookie name
+  name: "connect.sid",
   secret: process.env.SESSION_SECRET || "mediverse",
   resave: false,
   saveUninitialized: false,
+
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // ✅ must be HTTPS in prod
-    sameSite: "none",         // ✅ cross-site cookie
+    secure: true,
+    sameSite: "none",
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
 });
