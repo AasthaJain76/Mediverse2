@@ -5,8 +5,8 @@ export const getContests = async (req, res) => {
   const apiKey = process.env.CLIST_API_KEY;
   
   if (!username || !apiKey) {
-    console.error("❌ Clist API credentials not set in server configuration.");
-    return res.status(500).json({ error: "Contest service is currently misconfigured." });
+    console.warn("⚠️ Clist API credentials not set in server configuration. Returning empty array.");
+    return res.status(200).json([]);
   }
 
   const now = new Date().toISOString();
