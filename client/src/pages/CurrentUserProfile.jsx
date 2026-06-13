@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getMyProfile, getProfileById } from "../services/profileService";
+import { getMyProfile, getProfileById, updateMyProfile } from "../services/profileService";
 
 export default function Profile() {
   const { userId } = useParams();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [loggedInUserId, setLoggedInUserId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [formData, setFormData] = useState({
+    batch: "",
+    department: "",
+    skills: "",
+    interests: "",
+    achievements: "",
+    github: "",
+    linkedin: "",
+    leetcodeUsername: "",
+    codeforcesHandle: "",
+  });
 
   const getLeetCodeUrl = (username) => {
     if (!username) return "";
@@ -62,6 +75,44 @@ export default function Profile() {
     fetchProfile();
   }, [userId]);
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoadingSave(true);
+      const updatedProfile = {
+        batch: formData.batch,
+        department: formData.department,
+        skills: formData.skills ? formData.skills.split(",").map(s => s.trim()).filter(Boolean) : [],
+        interests: formData.interests ? formData.interests.split(",").map(s => s.trim()).filter(Boolean) : [],
+        achievements: formData.achievements ? formData.achievements.split(",").map(s => s.trim()).filter(Boolean) : [],
+        github: formData.github,
+        linkedin: formData.linkedin,
+        leetcode: {
+          ...profile.leetcode,
+          username: formData.leetcodeUsername
+        },
+        codeforces: {
+          ...profile.codeforces,
+          handle: formData.codeforcesHandle
+        }
+      };
+
+      const res = await updateMyProfile(updatedProfile);
+      setProfile(res);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      alert("Failed to update profile.");
+    } finally {
+      setLoadingSave(false);
+    }
+  };
+
   if (error)
     return <p className="text-red-600 text-center mt-12 text-base">{error}</p>;
   if (!profile)
@@ -70,6 +121,135 @@ export default function Profile() {
         Loading profile...
       </p>
     );
+
+  if (isEditing) {
+    return (
+      <div className="max-w-3xl mx-auto p-8 bg-white rounded-3xl shadow-xl border border-gray-200">
+        <h1 className="text-2xl font-extrabold text-blue-600 mb-6 text-center">
+          ✏️ Edit Profile
+        </h1>
+        <form onSubmit={handleFormSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">Batch:</label>
+              <input
+                type="text"
+                name="batch"
+                value={formData.batch}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="e.g. 2025"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">Department:</label>
+              <input
+                type="text"
+                name="department"
+                value={formData.department}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="e.g. CSE"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">Skills (comma-separated):</label>
+              <input
+                type="text"
+                name="skills"
+                value={formData.skills}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="React, Node, Python"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">Interests (comma-separated):</label>
+              <input
+                type="text"
+                name="interests"
+                value={formData.interests}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="AI, Web3, Mobile"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">GitHub URL:</label>
+              <input
+                type="text"
+                name="github"
+                value={formData.github}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="https://github.com/username"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">LinkedIn URL:</label>
+              <input
+                type="text"
+                name="linkedin"
+                value={formData.linkedin}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="https://linkedin.com/in/username"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">LeetCode Username:</label>
+              <input
+                type="text"
+                name="leetcodeUsername"
+                value={formData.leetcodeUsername}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-800">Codeforces Handle:</label>
+              <input
+                type="text"
+                name="codeforcesHandle"
+                value={formData.codeforcesHandle}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="handle"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-semibold text-gray-800">Achievements (comma-separated):</label>
+            <textarea
+              name="achievements"
+              value={formData.achievements}
+              onChange={handleInputChange}
+              rows="3"
+              className="w-full px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              placeholder="Award X, Hackathon Y Winner"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loadingSave}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow transition disabled:opacity-50"
+            >
+              {loadingSave ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-8 bg-white rounded-3xl shadow-xl border border-gray-200">
@@ -81,28 +261,38 @@ export default function Profile() {
             : "My Profile"}
         </h1>
         {profile.userId?._id === loggedInUserId && (
-          <Link
-            to="/my-roadmaps"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition text-sm md:text-base"
-          >
-            📌 My Roadmaps
-          </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setFormData({
+                  batch: profile.batch || "",
+                  department: profile.department || "",
+                  skills: profile.skills ? profile.skills.join(", ") : "",
+                  interests: profile.interests ? profile.interests.join(", ") : "",
+                  achievements: profile.achievements ? profile.achievements.join(", ") : "",
+                  github: profile.github || "",
+                  linkedin: profile.linkedin || "",
+                  leetcodeUsername: profile.leetcode?.username || "",
+                  codeforcesHandle: profile.codeforces?.handle || "",
+                });
+                setIsEditing(true);
+              }}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition text-sm md:text-base font-semibold"
+            >
+              ✏️ Edit Profile
+            </button>
+            <Link
+              to="/my-roadmaps"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition text-sm md:text-base font-semibold"
+            >
+              📌 My Roadmaps
+            </Link>
+          </div>
         )}
       </div>
 
       {/* Profile Info */}
       <div className="flex flex-col items-center mb-8">
-        {profile.avatar ? (
-          <img
-            src={profile.avatar}
-            alt="Avatar"
-            className="w-28 h-28 rounded-full object-cover border-4 border-blue-200 mb-4 shadow-md"
-          />
-        ) : (
-          <div className="w-28 h-28 flex items-center justify-center bg-gray-200 text-gray-500 rounded-full mb-4 text-sm font-medium">
-            No Avatar
-          </div>
-        )}
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           {profile.userId?.username}
           {profile.userId?._id === loggedInUserId && (

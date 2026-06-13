@@ -92,17 +92,6 @@ export default function Profile() {
 
       {/* Profile Card */}
       <div className="flex flex-col items-center bg-gray-50 rounded-2xl p-6 shadow-inner">
-        {profile.avatar ? (
-          <img
-            src={profile.avatar}
-            alt="Avatar"
-            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md mb-4"
-          />
-        ) : (
-          <div className="w-32 h-32 flex items-center justify-center bg-gray-200 text-gray-400 rounded-full mb-4 text-xl font-semibold">
-            No Avatar
-          </div>
-        )}
         <h1 className="text-xl font-bold text-gray-800">
           {profile.userId?.username}{" "}
           {profile.userId?._id === loggedInUserId && (
