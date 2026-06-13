@@ -80,6 +80,16 @@ export const registerUser = async (req, res) => {
       return res.status(201).json({ success: true, user: registeredUser });
     });
   } catch (err) {
+    console.error("Registration error:", err);
+    if (err.code === 11000 || (err.message && err.message.includes("E11000"))) {
+      if (err.message.includes("username")) {
+        return res.status(400).json({ message: "Username is already taken. Please choose another one." });
+      }
+      if (err.message.includes("email")) {
+        return res.status(400).json({ message: "Email is already in use." });
+      }
+      return res.status(400).json({ message: "A user with these details already exists." });
+    }
     res.status(500).json({ message: err.message });
   }
 };
