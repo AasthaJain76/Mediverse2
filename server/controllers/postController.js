@@ -10,7 +10,7 @@ export const createPost = async (req, res) => {
     const { title, content, status } = req.body;
     const slug = req.body.slug || slugify(title || "", { lower: true });
 
-    if (!title || !slug || !content) return res.status(400).json({ message: "Missing required fields" });
+    if (!title || !slug) return res.status(400).json({ message: "Missing required fields" });
 
     const existing = await Post.findOne({ slug });
     if (existing) return res.status(400).json({ message: "Slug already exists" });

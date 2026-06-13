@@ -1,30 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux'; // ✅ Import useSelector
 import { getProfileById } from '../services/profileService';
-import { getCurrentUser } from '../services/authService';
 
 const ThreadCard = ({ thread, onDelete }) => {
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(thread.userName || '');
   const [canDelete, setCanDelete] = useState(false);
+
+  // ✅ Get current user from Redux store
+  const currentUser = useSelector((state) => state.auth.userData);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userProfile = await getProfileById(thread.authorId);
+        const userProfile = await getProfileById(thread.userId);
         if (userProfile) {
-          setUsername(userProfile.userName || 'Unknown');
-        }
-        const currentUser = getCurrentUser();
-        if (currentUser?.$id === thread.authorId || currentUser?.role === 'admin') {
-          setCanDelete(true);
+          setUsername(thread.userName || userProfile.userId?.username || 'Unknown');
         }
       } catch (error) {
         console.error('Failed to fetch user profile', error);
+        setUsername(thread.userName || 'Unknown');
       }
     };
 
-    if (thread.authorId) fetchUserData();
-  }, [thread.authorId]);
+    if (thread.userName) {
+      setUsername(thread.userName);
+    } else if (thread.userId) {
+      fetchUserData();
+    } else {
+      setUsername('Unknown');
+    }
+    
+    const currentUserIdStr = (currentUser?._id || currentUser?.id || '').toString();
+    const threadUserIdStr = typeof thread.userId === 'object'
+      ? (thread.userId?._id || thread.userId?.id || '').toString()
+      : (thread.userId || '').toString();
+
+    if (currentUser && currentUserIdStr && threadUserIdStr && (currentUserIdStr === threadUserIdStr || currentUser.role === 'admin')) {
+      setCanDelete(true);
+    } else {
+      setCanDelete(false);
+    }
+  }, [thread.userId, thread.userName, currentUser]);
 
   return (
     <div className="bg-white rounded-xl shadow-md p-5 hover:shadow-xl transition-shadow duration-300 relative border border-gray-200">
@@ -34,8 +51,6 @@ const ThreadCard = ({ thread, onDelete }) => {
         </h2>
 
         <div className="flex gap-3 items-center">
-          <span className="text-sm text-gray-500">{thread.upvotes || 0} 👍</span>
-
           {canDelete && (
             <button
               onClick={() => onDelete(thread._id)}

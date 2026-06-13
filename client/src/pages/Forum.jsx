@@ -18,6 +18,13 @@ const Forum = () => {
   const loggedInUserId = loggedInUser?._id;
   const isAdmin = loggedInUser?.role === "admin";
 
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+  });
+
   const fetchThreads = async () => {
     try {
       const fetchedThreads = await getAllThreads();
@@ -52,40 +59,21 @@ const Forum = () => {
 
 
   const handleDelete = (threadId) => {
-    // ✅ Show custom toast confirmation
-    toast(
-      ({ closeToast }) => (
-        <div className="flex flex-col gap-2">
-          <span>Are you sure you want to delete this thread?</span>
-          <div className="flex gap-2 mt-2 justify-end">
-            <button
-              onClick={async () => {
-                try {
-                  await deleteThread(threadId);
-                  setThreads(prev => prev.filter(t => t._id !== threadId));
-                  toast.dismiss(); // close confirmation toast
-                  toast.success("Thread deleted successfully!");
-                } catch (err) {
-                  console.error(err);
-                  toast.dismiss();
-                  toast.error("Failed to delete thread.");
-                }
-              }}
-              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-            >
-              Yes
-            </button>
-            <button
-              onClick={() => toast.dismiss()}
-              className="bg-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      { autoClose: false, closeOnClick: false }
-    );
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Thread",
+      message: "Are you sure you want to delete this thread? This action cannot be undone and will delete all replies.",
+      onConfirm: async () => {
+        try {
+          await deleteThread(threadId);
+          setThreads(prev => prev.filter(t => t._id !== threadId));
+          toast.success("Thread deleted successfully!");
+        } catch (err) {
+          console.error(err);
+          toast.error("Failed to delete thread.");
+        }
+      }
+    });
   };
 
 
@@ -126,24 +114,41 @@ const Forum = () => {
           <p className="text-gray-500">No threads found for the selected tag.</p>
         ) : (
           filteredThreads.map(thread => (
-            <div
-              key={thread._id}
-              className="mb-4 border p-4 rounded shadow-sm flex justify-between items-center hover:shadow-md transition"
-            >
-              <ThreadCard thread={thread} />
-
-              {(thread.userId === loggedInUserId || isAdmin) && (
-                <button
-                  onClick={() => handleDelete(thread._id)}
-                  className="ml-4 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
-                  Delete
-                </button>
-              )}
+            <div key={thread._id} className="mb-4">
+              <ThreadCard thread={thread} onDelete={handleDelete} />
             </div>
           ))
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 mx-4">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">{confirmModal.title}</h3>
+            <p className="text-gray-600 mb-6 text-sm">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirmModal.onConfirm) {
+                    await confirmModal.onConfirm();
+                  }
+                  setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition shadow-md shadow-red-500/20 text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

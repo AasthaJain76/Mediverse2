@@ -36,3 +36,12 @@ export const deleteReply = async (replyId) => {
   );
   return res.data;
 };
+
+// 📝 Update a reply (requires session)
+export const updateReply = async (replyId, replyData) => {
+  const res = await axiosInstance.put(
+    `${API_URL}/${replyId}`,
+    replyData
+  );
+  return res.data;
+};

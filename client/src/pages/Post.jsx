@@ -88,11 +88,13 @@ export default function Post() {
         {/* Post Card */}
         <div className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 mb-8">
           {post.featuredImage && (
-            <img
-              src={post.featuredImage}
-              alt={post.title}
-              className="w-full h-96 object-cover rounded-2xl mb-6"
-            />
+            <div className="w-full bg-gray-50/50 rounded-2xl mb-6 border border-gray-100/80 overflow-hidden flex items-center justify-center">
+              <img
+                src={post.featuredImage}
+                alt={post.title}
+                className="max-h-[500px] w-auto object-contain rounded-2xl"
+              />
+            </div>
           )}
 
           {isAuthor && (

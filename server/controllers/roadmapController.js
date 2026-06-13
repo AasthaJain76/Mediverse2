@@ -34,7 +34,7 @@ Format Guidelines:
 5️⃣ Avoid long paragraphs. Prefer structured bullets.
 `;
 
-    const result = await model.generateContent({
+    const generateParams = {
       contents: [
         {
           role: "user",
@@ -46,7 +46,29 @@ Format Guidelines:
         maxOutputTokens: 4096, // 🔥 ensures full roadmap
         topP: 0.95,
       },
-    });
+    };
+
+    let result;
+    try {
+      console.log("⚡ Calling Gemini with gemini-2.5-flash...");
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      result = await model.generateContent(generateParams);
+    } catch (firstError) {
+      console.warn("⚠️ Gemini 2.5 Flash failed or overloaded, attempting fallback to gemini-2.5-flash-lite:", firstError.message);
+      try {
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        result = await fallbackModel.generateContent(generateParams);
+      } catch (secondError) {
+        console.warn("⚠️ Fallback model gemini-2.5-flash-lite also failed, attempting fallback to gemini-flash-latest:", secondError.message);
+        try {
+          const secondFallbackModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+          result = await secondFallbackModel.generateContent(generateParams);
+        } catch (thirdError) {
+          console.error("❌ All fallback models failed:", thirdError.message);
+          throw firstError; // Throw original error if all fail
+        }
+      }
+    }
 
     // 3️⃣ Extract full text safely
     const generatedRoadmap = result.response.text()?.trim() || "No roadmap generated.";

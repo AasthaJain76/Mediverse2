@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Post from "../models/Post.js";
 import fs from "fs";
 import mongoose from "mongoose";
+import { cloudinary } from "../cloudConfig.js";
 
 export const updateMyProfile = async (req, res) => {
   console.log("📩 Incoming body:", req.body);
@@ -75,13 +76,16 @@ export const deleteMyProfile = async (req, res) => {
     // 1. Delete Profile
     await Profile.findOneAndDelete({ userId });
 
-    // 2. Delete Posts & images
+    // 2. Delete Posts & images from Cloudinary
     const posts = await Post.find({ userId });
     for (let post of posts) {
-      if (post.featuredImage) {
-        fs.unlink(`uploads/${post.featuredImage}`, (err) => {
-          if (err) console.log("Failed to delete image:", err.message);
-        });
+      if (post.featuredImageId) {
+        try {
+          await cloudinary.uploader.destroy(post.featuredImageId);
+          console.log("Cloudinary image deleted:", post.featuredImageId);
+        } catch (err) {
+          console.log("Failed to delete Cloudinary image:", err.message);
+        }
       }
     }
     await Post.deleteMany({ userId });

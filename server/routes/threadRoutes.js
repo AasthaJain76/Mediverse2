@@ -5,6 +5,7 @@ import {
   getThreadById,
   deleteThread,
   toggleUpvote,
+  updateThread,
 } from "../controllers/threadController.js";
 import { protect } from "../middlewares/protect.js";
 
@@ -17,6 +18,7 @@ router.get("/:id", getThreadById);
 // Protected routes
 router.post("/", protect, createThread);
 router.delete("/:id", protect, deleteThread);
+router.put("/:id", protect, updateThread);
 router.patch("/:id/upvote", protect, toggleUpvote);
 
 export default router;

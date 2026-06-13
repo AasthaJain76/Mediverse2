@@ -8,6 +8,32 @@ export default function Profile() {
   const [error, setError] = useState(null);
   const [loggedInUserId, setLoggedInUserId] = useState(null);
 
+  const getLeetCodeUrl = (username) => {
+    if (!username) return "";
+    if (username.startsWith("http://") || username.startsWith("https://")) {
+      return username;
+    }
+    return `https://leetcode.com/u/${username}`;
+  };
+
+  const getCodeforcesUrl = (handle) => {
+    if (!handle) return "";
+    if (handle.startsWith("http://") || handle.startsWith("https://")) {
+      return handle;
+    }
+    return `https://codeforces.com/profile/${handle}`;
+  };
+
+  const getDisplayUsername = (val) => {
+    if (!val) return "";
+    if (val.startsWith("http://") || val.startsWith("https://")) {
+      const cleaned = val.replace(/\/$/, "");
+      const parts = cleaned.split("/");
+      return parts[parts.length - 1];
+    }
+    return val;
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -136,24 +162,24 @@ export default function Profile() {
             <div className="flex flex-col gap-2">
               {profile.leetcode?.username && (
                 <a
-                  href={`https://leetcode.com/${profile.leetcode.username}`}
+                  href={getLeetCodeUrl(profile.leetcode.username)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-yellow-100 text-gray-800 rounded-lg shadow hover:bg-yellow-200 transition text-sm md:text-base"
                 >
-                  🟨 LeetCode: {profile.leetcode.username} (
+                  🟨 LeetCode: {getDisplayUsername(profile.leetcode.username)} (
                   {profile.leetcode.stats?.totalSolved ?? 0} solved, rating{" "}
                   {profile.leetcode.stats?.rating ?? "N/A"})
                 </a>
               )}
               {profile.codeforces?.handle && (
                 <a
-                  href={`https://codeforces.com/profile/${profile.codeforces.handle}`}
+                  href={getCodeforcesUrl(profile.codeforces.handle)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-blue-100 text-gray-800 rounded-lg shadow hover:bg-blue-200 transition text-sm md:text-base"
                 >
-                  🔵 Codeforces: {profile.codeforces.handle} (rating{" "}
+                  🔵 Codeforces: {getDisplayUsername(profile.codeforces.handle)} (rating{" "}
                   {profile.codeforces.rating ?? "N/A"}, max{" "}
                   {profile.codeforces.maxRating ?? "N/A"})
                 </a>

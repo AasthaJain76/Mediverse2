@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login as authLogin } from "../store/authSlice";
-import { Button, Input, Logo } from "./index";
+import { Button, Input } from "./index";
 import { useForm } from "react-hook-form";
 import { login as loginService } from "../services/authService";
 import { toast } from "react-toastify";
@@ -16,7 +16,7 @@ function Login() {
   const handleLogin = async (data) => {
     try {
       const user = await loginService(data);
-      dispatch(authLogin({ userData: user }));
+      dispatch(authLogin({ userData: user.user }));
       toast.success("🎉 Login successful!");
       navigate("/");
     } catch (err) {
@@ -27,60 +27,39 @@ function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-8 border border-gray-200">
-        {/* Logo */}
-        <div className="mb-6 flex justify-center">
-            <Logo />
+    <div className="w-full">
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-center text-sm font-medium border border-red-100">
+          {error}
         </div>
+      )}
 
-        {/* Title */}
-        <h2 className="text-center text-2xl font-bold text-gray-800">
-          Welcome back 👋
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Don&apos;t have an account?{" "}
-          <Link
-            to="/signup"
-            className="font-medium text-indigo-600 hover:underline"
-          >
-            Sign Up
-          </Link>
-        </p>
-
-        {/* Error Message */}
-        {error && (
-          <p className="text-red-600 mt-4 text-center text-sm font-medium">
-            {error}
-          </p>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit(handleLogin)} className="mt-6 space-y-5">
-          <Input
-            label="Email"
-            placeholder="Enter your email"
-            type="email"
-            {...register("email", {
-              required: true,
-              validate: {
-                matchPattern: (value) =>
-                  /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/.test(value) ||
-                  "Invalid email address",
-              },
-            })}
-          />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Enter your password"
-            {...register("password", { required: true })}
-          />
-          <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
-            Sign in
-          </Button>
-        </form>
-      </div>
+      {/* Form */}
+      <form onSubmit={handleSubmit(handleLogin)} className="space-y-5">
+        <Input
+          label="Email"
+          placeholder="Enter your email"
+          type="email"
+          {...register("email", {
+            required: true,
+            validate: {
+              matchPattern: (value) =>
+                /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/.test(value) ||
+                "Invalid email address",
+            },
+          })}
+        />
+        <Input
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          {...register("password", { required: true })}
+        />
+        <Button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-indigo-500/20 transition duration-300">
+          Sign in
+        </Button>
+      </form>
     </div>
   );
 }

@@ -18,15 +18,20 @@ import threadRoutes from "./routes/threadRoutes.js";
 import replyRoutes from "./routes/replyRoutes.js";
 import roadmapRoutes from "./routes/roadmapRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js";
+import contestRoutes from "./routes/contestRoutes.js";
 
 if (process.env.NODE_ENV !== "production") dotenv.config();
 
 const app = express();
 
 // --- CORS ---
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map(url => url.trim())
+  : ["https://mediverse2.vercel.app", "http://localhost:5173"];
+
 app.use(
   cors({
-    origin: "https://mediverse2.vercel.app",
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -51,8 +56,8 @@ const sessionMiddleware = session({
 
   cookie: {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
 });
@@ -80,6 +85,7 @@ app.use("/threads", threadRoutes);
 app.use("/replies", replyRoutes);
 app.use("/roadmap", roadmapRoutes);
 app.use("/resume", resumeRoutes);
+app.use("/contests", contestRoutes);
 
 // --- Server + Socket ---
 const server = createServer(app);
@@ -87,10 +93,6 @@ const io = initIO(server);
 
 // Share session
 io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
-io.use((socket, next) => {
-  if (socket.request.session?.passport?.user) next();
-  else next(new Error("Unauthorized"));
-});
 
 io.on("connection", (socket) => {
   console.log("✅ Client connected:", socket.id);

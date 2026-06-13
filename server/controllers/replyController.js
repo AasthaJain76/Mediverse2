@@ -53,9 +53,10 @@ export const deleteReply = async (req, res) => {
     const reply = await Reply.findById(req.params.replyId);
     if (!reply) return res.status(404).json({ message: "Reply not found" });
 
-    // ✅ Only the creator can delete
+    // ✅ Creator or admin can delete
     const isOwner = reply.userId.toString() === req.user._id.toString();
-    if (!isOwner) return res.status(403).json({ message: "Unauthorized" });
+    const isAdmin = req.user.role === "admin";
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Unauthorized" });
 
     await reply.deleteOne();
 
@@ -98,5 +99,37 @@ export const upvoteReply = async (req, res) => {
   } catch (err) {
     console.error("Error upvoting reply:", err);
     res.status(500).json({ message: "Failed to toggle upvote" });
+  }
+};
+
+// Update a reply (edit reply)
+export const updateReply = async (req, res) => {
+  try {
+    const { content } = req.body;
+    const { replyId } = req.params;
+
+    if (!content || content.trim() === "") {
+      return res.status(400).json({ message: "Content cannot be empty" });
+    }
+
+    const reply = await Reply.findById(replyId);
+    if (!reply) return res.status(404).json({ message: "Reply not found" });
+
+    // Creator or admin can edit
+    const isOwner = reply.userId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Unauthorized" });
+
+    reply.content = content;
+    await reply.save();
+
+    // Emit real-time update
+    const io = getIO();
+    io?.to(reply.threadId.toString()).emit("update-reply", reply);
+
+    res.status(200).json(reply);
+  } catch (err) {
+    console.error("Error updating reply:", err);
+    res.status(500).json({ message: "Failed to update reply", error: err.message });
   }
 };

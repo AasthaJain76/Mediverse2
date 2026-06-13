@@ -68,7 +68,9 @@ export const deleteThread = async (req, res) => {
     const thread = await Thread.findById(req.params.id);
     if (!thread) return res.status(404).json({ message: "Thread not found" });
 
-    if (thread.userId.toString() !== req.user._id.toString()) {
+    const isOwner = thread.userId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin";
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: "Not authorized to delete this thread" });
     }
 
@@ -110,6 +112,39 @@ export const toggleUpvote = async (req, res) => {
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: "Error toggling upvote", error });
+  }
+};
+
+// @desc    Update a thread (edit thread)
+// @route   PUT /api/threads/:id
+// @access  Private (Owner only)
+export const updateThread = async (req, res) => {
+  try {
+    const { title, body, tags } = req.body;
+    const { id } = req.params;
+
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread not found" });
+
+    const isOwner = thread.userId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Not authorized to update this thread" });
+    }
+
+    if (title !== undefined) thread.title = title;
+    if (body !== undefined) thread.body = body;
+    if (tags !== undefined) thread.tags = tags;
+
+    const updated = await thread.save();
+
+    // Emit socket event to all clients
+    const io = getIO();
+    io?.emit("update-thread", updated);
+
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating thread", error: error.message });
   }
 };
 

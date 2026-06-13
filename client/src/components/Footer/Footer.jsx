@@ -5,64 +5,128 @@ import { FaFacebookF, FaTwitter, FaLinkedinIn, FaInstagram } from 'react-icons/f
 
 function Footer() {
   return (
-    <footer className="relative overflow-hidden py-8 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white">
-      <div className="relative z-10 mx-auto max-w-7xl px-6">
-        <div className="flex flex-wrap -m-4 justify-between">
+    <footer className="w-full bg-slate-900 text-gray-300 border-t border-slate-800/85 py-12 relative overflow-hidden">
+      {/* Background radial glow */}
+      <div className="absolute top-0 right-1/4 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-          {/* Logo + Copyright */}
-          <div className="w-full p-4 md:w-1/2 lg:w-5/12">
-            <div className="flex h-full flex-col justify-between">
-              <div className="mb-4">
-                <Logo width="100px" />
-              </div>
-              <p className="text-xs sm:text-sm text-gray-200">
-                &copy; {new Date().getFullYear()} MediVerse. All Rights Reserved. <br />
-                Built with <span className="text-pink-300">♥</span> by DevUI
-              </p>
-              <div className="mt-3 flex gap-4 text-lg">
-                <a href="https://facebook.com" target="_blank" rel="noreferrer">
-                  <FaFacebookF className="hover:text-amber-300 transition" />
-                </a>
-                <a href="https://twitter.com" target="_blank" rel="noreferrer">
-                  <FaTwitter className="hover:text-amber-300 transition" />
-                </a>
-                <a href="https://linkedin.com" target="_blank" rel="noreferrer">
-                  <FaLinkedinIn className="hover:text-amber-300 transition" />
-                </a>
-                <a href="https://instagram.com" target="_blank" rel="noreferrer">
-                  <FaInstagram className="hover:text-amber-300 transition" />
-                </a>
-              </div>
+      <div className="mx-auto max-w-7xl px-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          
+          {/* Column 1: Brand & Description */}
+          <div className="flex flex-col space-y-4">
+            <Link to="/" className="inline-block hover:opacity-90 transition w-fit">
+              <Logo width="100px" />
+            </Link>
+            <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
+              A comprehensive web ecosystem offering career planning, custom learning roadmaps, resume parsing, and interactive discussion forums.
+            </p>
+            <div className="flex gap-4 text-lg pt-2">
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 hover:text-white text-gray-400 transition duration-300">
+                <FaFacebookF size={16} />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 hover:text-white text-gray-400 transition duration-300">
+                <FaTwitter size={16} />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 hover:text-white text-gray-400 transition duration-300">
+                <FaLinkedinIn size={16} />
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 hover:text-white text-gray-400 transition duration-300">
+                <FaInstagram size={16} />
+              </a>
             </div>
           </div>
 
-          {/* Explore */}
-          <div className="w-full p-4 md:w-1/4 lg:w-2/12">
-            <h3 className="mb-3 text-sm sm:text-base font-semibold uppercase tracking-wide text-gray-200">
+          {/* Column 2: Explore */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
               Explore
             </h3>
-            <ul className="space-y-2">
-              <li><Link className="text-xs sm:text-sm hover:text-amber-300 transition" to="/features">Features</Link></li>
-              <li><Link className="text-xs sm:text-sm hover:text-amber-300 transition" to="/about">About</Link></li>
-              <li><Link className="text-xs sm:text-sm hover:text-amber-300 transition" to="/generate">Roadmaps</Link></li>
-              <li><Link className="text-xs sm:text-sm hover:text-amber-300 transition" to="/forum">Community</Link></li>
+            <ul className="space-y-2.5">
+              <li>
+                <Link className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" to="/features">
+                  Features
+                </Link>
+              </li>
+              <li>
+                <Link className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" to="/about">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" to="/generate">
+                  Roadmaps
+                </Link>
+              </li>
+              <li>
+                <Link className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" to="/forum">
+                  Community
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Support */}
-          <div className="w-full p-4 md:w-1/4 lg:w-2/12">
-            <h3 className="mb-3 text-sm sm:text-base font-semibold uppercase tracking-wide text-gray-200">
+          {/* Column 3: Support */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
               Support
             </h3>
-            <ul className="space-y-2">
-              <li><Link className="text-xs sm:text-sm hover:text-amber-300 transition" to="/profile">Account</Link></li>
-              <li><Link className="text-xs sm:text-sm hover:text-amber-300 transition" to="/contact">Contact Us</Link></li>
+            <ul className="space-y-2.5">
+              <li>
+                <Link className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" to="/profile">
+                  Account
+                </Link>
+              </li>
+              <li>
+                <Link className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" to="/contact">
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <a className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" href="#">
+                  Help Center
+                </a>
+              </li>
             </ul>
           </div>
 
-          {/* Empty space removed, adjusted layout */}
-          <div className="w-full md:w-0 lg:w-3/12"></div>
+          {/* Column 4: Legal & System */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              Legal
+            </h3>
+            <ul className="space-y-2.5">
+              <li>
+                <a className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" href="#">
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" href="#">
+                  Terms of Service
+                </a>
+              </li>
+              <li>
+                <a className="text-sm text-gray-400 hover:text-indigo-400 transition duration-200" href="#">
+                  Cookie Policy
+                </a>
+              </li>
+            </ul>
+          </div>
 
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-slate-800 my-8"></div>
+
+        {/* Bottom copyright */}
+        <div className="flex flex-col md:flex-row items-center justify-between text-xs text-gray-500">
+          <p>
+            &copy; {new Date().getFullYear()} MediVerse. All Rights Reserved.
+          </p>
+          <p className="mt-2 md:mt-0">
+            Built with <span className="text-indigo-500">♥</span> by DevUI
+          </p>
         </div>
       </div>
     </footer>

@@ -33,3 +33,9 @@ export const deleteThread = async (threadId) => {
   const res = await axiosInstance.delete(`${API_URL}/${threadId}`);
   return res.data;
 };
+
+// ✅ Update a thread (authenticated)
+export const updateThread = async (threadId, threadData) => {
+  const res = await axiosInstance.put(`${API_URL}/${threadId}`, threadData);
+  return res.data;
+};

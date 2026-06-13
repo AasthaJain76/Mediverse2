@@ -8,6 +8,32 @@ export default function Profile() {
   const [error, setError] = useState(null);
   const [loggedInUserId, setLoggedInUserId] = useState(null);
 
+  const getLeetCodeUrl = (username) => {
+    if (!username) return "";
+    if (username.startsWith("http://") || username.startsWith("https://")) {
+      return username;
+    }
+    return `https://leetcode.com/u/${username}`;
+  };
+
+  const getCodeforcesUrl = (handle) => {
+    if (!handle) return "";
+    if (handle.startsWith("http://") || handle.startsWith("https://")) {
+      return handle;
+    }
+    return `https://codeforces.com/profile/${handle}`;
+  };
+
+  const getDisplayUsername = (val) => {
+    if (!val) return "";
+    if (val.startsWith("http://") || val.startsWith("https://")) {
+      const cleaned = val.replace(/\/$/, "");
+      const parts = cleaned.split("/");
+      return parts[parts.length - 1];
+    }
+    return val;
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -130,24 +156,24 @@ export default function Profile() {
             <div className="flex flex-col gap-2">
               {profile.leetcode?.username && (
                 <a
-                  href={`https://leetcode.com/${profile.leetcode.username}`}
+                  href={getLeetCodeUrl(profile.leetcode.username)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 rounded-lg shadow-sm text-gray-800 font-medium transition"
                 >
-                  🟨 LeetCode: {profile.leetcode.username} (
+                  🟨 LeetCode: {getDisplayUsername(profile.leetcode.username)} (
                   {profile.leetcode.stats.totalSolved} solved, rating{" "}
                   {profile.leetcode.stats.rating})
                 </a>
               )}
               {profile.codeforces?.handle && (
                 <a
-                  href={`https://codeforces.com/profile/${profile.codeforces.handle}`}
+                  href={getCodeforcesUrl(profile.codeforces.handle)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg shadow-sm text-gray-800 font-medium transition"
                 >
-                  🔵 Codeforces: {profile.codeforces.handle} (rating{" "}
+                  🔵 Codeforces: {getDisplayUsername(profile.codeforces.handle)} (rating{" "}
                   {profile.codeforces.rating}, max {profile.codeforces.maxRating})
                 </a>
               )}

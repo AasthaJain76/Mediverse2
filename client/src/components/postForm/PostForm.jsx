@@ -12,7 +12,6 @@ export default function PostForm({ post }) {
       title: post?.title || "",
       slug: post?.slug || "",
       content: post?.content || "",
-      status: post?.status || "active",
     },
   });
 
@@ -50,8 +49,8 @@ export default function PostForm({ post }) {
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("slug", data.slug); // slug sent to backend but not editable
-      formData.append("content", data.content);
-      formData.append("status", data.status);
+      formData.append("content", data.content || "");
+      formData.append("status", "active");
       if (data.image?.[0]) formData.append("featuredImage", data.image[0]); // optional
 
       let res;
@@ -100,12 +99,13 @@ export default function PostForm({ post }) {
           type="file"
           className="mb-4"
           accept="image/*"
-          {...register("image")}
-          onChange={(e) => {
-            if (e.target.files?.[0]) {
-              setPreview(URL.createObjectURL(e.target.files[0]));
+          {...register("image", {
+            onChange: (e) => {
+              if (e.target.files?.[0]) {
+                setPreview(URL.createObjectURL(e.target.files[0]));
+              }
             }
-          }}
+          })}
         />
 
         {/* Image Preview */}
@@ -118,13 +118,6 @@ export default function PostForm({ post }) {
             />
           </div>
         )}
-
-        <Select
-          options={["active", "inactive"]}
-          label="Status"
-          className="mb-4"
-          {...register("status", { required: true })}
-        />
 
         <Button
           type="submit"

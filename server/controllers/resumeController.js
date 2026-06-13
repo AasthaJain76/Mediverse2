@@ -59,37 +59,94 @@ export const analyzeResume = async (req, res) => {
     console.log("Cleaned text preview:\n", cleaned.slice(0, 300));
 
     // ---------------------------------------------------------------
-    // 3️⃣ GEMINI PROMPT
+    // 3️⃣ GEMINI PROMPT & SCHEMA
     // ---------------------------------------------------------------
-    const prompt = `
-Reply ONLY with valid JSON. No markdown.
+    const prompt = `Analyze the following resume text. Provide improvements, extracted skills, skill gaps, suggested roles, ATS keywords, a score out of 100, and specific feedback for each section (summary, skills, experience, education, projects).
+    
+    Resume text:
+    ${cleaned}`;
 
-Return:
-{
-  "improvements": [],
-  "extracted_skills": [],
-  "skill_gaps": [],
-  "score": 0,
-  "recommended_roles": [],
-  "ats_keywords": [],
-  "section_feedback": {
-    "summary": "",
-    "skills": "",
-    "experience": "",
-    "education": "",
-    "projects": ""
-  }
-}
-
-Resume text:
-${cleaned}
-`;
+    const resumeSchema = {
+      type: "OBJECT",
+      properties: {
+        improvements: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        extracted_skills: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        skill_gaps: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        score: {
+          type: "INTEGER"
+        },
+        recommended_roles: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        ats_keywords: {
+          type: "ARRAY",
+          items: { type: "STRING" }
+        },
+        section_feedback: {
+          type: "OBJECT",
+          properties: {
+            summary: { type: "STRING" },
+            skills: { type: "STRING" },
+            experience: { type: "STRING" },
+            education: { type: "STRING" },
+            projects: { type: "STRING" }
+          },
+          required: ["summary", "skills", "experience", "education", "projects"]
+        }
+      },
+      required: [
+        "improvements",
+        "extracted_skills",
+        "skill_gaps",
+        "score",
+        "recommended_roles",
+        "ats_keywords",
+        "section_feedback"
+      ]
+    };
 
     // ---------------------------------------------------------------
     // 4️⃣ CALL GEMINI
     // ---------------------------------------------------------------
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
+    const generateParams = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: resumeSchema
+      }
+    };
+
+    let result;
+    try {
+      console.log("⚡ Calling Gemini with gemini-2.5-flash for resume analysis...");
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      result = await model.generateContent(generateParams);
+    } catch (firstError) {
+      console.warn("⚠️ Gemini 2.5 Flash failed or overloaded, attempting fallback to gemini-2.5-flash-lite for resume analysis:", firstError.message);
+      try {
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        result = await fallbackModel.generateContent(generateParams);
+      } catch (secondError) {
+        console.warn("⚠️ Fallback model gemini-2.5-flash-lite also failed for resume analysis, attempting fallback to gemini-flash-latest:", secondError.message);
+        try {
+          const secondFallbackModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+          result = await secondFallbackModel.generateContent(generateParams);
+        } catch (thirdError) {
+          console.error("❌ All fallback models failed for resume analysis:", thirdError.message);
+          throw firstError; // Throw original error if all fail
+        }
+      }
+    }
     const rawOutput = result.response.text();
 
     console.log("Gemini Output:", rawOutput.slice(0, 200));
@@ -99,11 +156,9 @@ ${cleaned}
     // ---------------------------------------------------------------
     let analysis;
     try {
-      const first = rawOutput.indexOf("{");
-      const last = rawOutput.lastIndexOf("}");
-      const json = rawOutput.slice(first, last + 1);
-      analysis = JSON.parse(json);
-    } catch {
+      analysis = JSON.parse(rawOutput);
+    } catch (err) {
+      console.error("❌ JSON parsing failed for structured response:", err);
       analysis = { error: "Invalid JSON from model", raw: rawOutput };
     }
 

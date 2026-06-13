@@ -6,9 +6,13 @@ let io = null;
 export const initIO = (server) => {
   if (io) return io;
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map(url => url.trim())
+    : ["https://mediverse2.vercel.app", "http://localhost:5173"];
+
   io = new Server(server, {
     cors: {
-      origin: "https://mediverse2.vercel.app",
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true,
     },
