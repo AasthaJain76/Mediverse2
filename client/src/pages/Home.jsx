@@ -22,6 +22,7 @@ function Home() {
         setPosts(postData.slice(0, 3));
 
         // 🔹 Upcoming contests
+        console.log("[Home] Requesting contests from baseURL:", axiosInstance.defaults.baseURL);
         const res = await axiosInstance.get("/contests", {
           params: {
             limit: 3,

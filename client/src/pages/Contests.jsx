@@ -10,6 +10,7 @@ const Contests = () => {
   useEffect(() => {
     const fetchContests = async () => {
       try {
+        console.log("[Contests] Requesting from baseURL:", axiosInstance.defaults.baseURL);
         const res = await axiosInstance.get('/contests', {
           params: {
             limit: 20,
