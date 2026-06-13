@@ -1,5 +1,12 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://mediverse2-13.onrender.com/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
   ]
 }
