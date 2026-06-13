@@ -3,4 +3,6 @@ node_modules/
 dist/
 build/
 client/node_modules
-server/node_modules
+server/node_moduleschrome-profile/
+edge-profile/
+*.log
