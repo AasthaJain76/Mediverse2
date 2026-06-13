@@ -10,8 +10,8 @@ export const getContests = async (req, res) => {
   }
 
   const now = new Date().toISOString();
-  // Default platforms: 1 (Codeforces), 102 (LeetCode), 73 (HackerEarth), 74 (HackerRank), 368 (AtCoder)
-  const platforms = req.query.platforms || "1,102,73,74,368";
+  // Default platforms: 1 (Codeforces), 102 (LeetCode), 73 (HackerEarth), 74 (HackerRank), 93 (AtCoder)
+  const platforms = req.query.platforms || "1,102,73,74,93";
   const limit = parseInt(req.query.limit, 10) || 20;
 
   try {
