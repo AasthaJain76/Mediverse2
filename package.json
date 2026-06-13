@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "express-validator": "^7.3.2",
     "mammoth": "^1.11.0",
     "node-tesseract-ocr": "^2.2.1",
     "pdf-extraction": "^1.0.2"

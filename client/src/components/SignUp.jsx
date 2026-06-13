@@ -125,7 +125,11 @@ function Signup() {
               placeholder="Enter your password"
               {...register("password", { 
                 required: "Password is required",
-                minLength: { value: 6, message: "Password must be at least 6 characters" }
+                validate: {
+                  strongPassword: (value) => 
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_]).{8,}$/.test(value) ||
+                    "Password must be at least 8 characters long and contain at least 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character"
+                }
               })} 
             />
             {errors.password && <p className="text-red-500 text-xs mt-0.5">{errors.password.message}</p>}
