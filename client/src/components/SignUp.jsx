@@ -127,7 +127,7 @@ function Signup() {
                 required: "Password is required",
                 validate: {
                   strongPassword: (value) => 
-                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_]).{8,}$/.test(value) ||
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).{8,}$/.test(value) ||
                     "Password must be at least 8 characters long and contain at least 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character"
                 }
               })} 
